@@ -10,4 +10,13 @@ use Stancl\Tenancy\Database\Concerns\HasDomains;
 class Tenant extends BaseTenant implements TenantWithDatabase
 {
     use HasDatabase, HasDomains;
+    /**
+     * Get the domain associated with the tenant.
+     *
+     * @return string|null
+     */
+    public function getDomain(): ?string
+    {
+        return $this->domains->first()->domain ?? null;
+    }
 }
