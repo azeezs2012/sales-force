@@ -2,7 +2,15 @@
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import PlaceholderPattern from '../components/PlaceholderPattern.vue';
-import { ref } from 'vue';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
 
 defineProps<{
@@ -21,6 +29,23 @@ const breadcrumbs = [
         href: '/entities',
     },
 ];
+
+const newTenantId = ref('');
+const tenants = ref<{ id: string; domain: string; created_at: string; updated_at: string; selectedAction?: string }[]>([]);
+
+const fetchTenants = async () => {
+    try {
+        const response = await axios.get('/api/entity/all');
+        console.log(response.data);
+        tenants.value = response.data.tenants;
+    } catch (error) {
+        console.error('Failed to fetch tenants:', error);
+    }
+};
+
+onMounted(() => {
+    fetchTenants();
+});
 
 const executeAction = async (tenant: { id: string; selectedAction?: string }) => {
     if (!tenant.selectedAction) {
@@ -41,9 +66,24 @@ const executeAction = async (tenant: { id: string; selectedAction?: string }) =>
             url,
         });
         alert(`Action ${action} executed successfully for tenant ${tenant.id}.`);
+        fetchTenants();
     } catch (error) {
-        console.error(error);
+        console.error(`Failed to execute action ${action} for tenant ${tenant.id}:`, error);
         alert(`Failed to execute action ${action} for tenant ${tenant.id}.`);
+    }
+};
+
+const createTenant = async () => {
+    try {
+        await axios.post('/api/entity/create', {
+            id: newTenantId.value,
+        });
+        alert('Tenant created successfully!');
+        newTenantId.value = '';
+        fetchTenants();
+    } catch (error) {
+        console.error('Failed to create tenant:', error);
+        alert('Failed to create tenant.');
     }
 };
 </script>
@@ -59,7 +99,15 @@ const executeAction = async (tenant: { id: string; selectedAction?: string }) =>
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                             <div class="p-6 text-gray-900">
                                 <h2 class="text-2xl font-bold mb-4">All Entities</h2>
-                                
+
+                                <!-- Form to create a new tenant -->
+                                <form @submit.prevent="createTenant" class="mb-6">
+                                    <div class="flex items-center gap-4">
+                                        <input type="text" v-model="newTenantId" placeholder="Enter Tenant ID" class="border rounded p-2" required />
+                                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Create Entity</button>
+                                    </div>
+                                </form>
+
                                 <div class="overflow-x-auto">
                                     <table class="min-w-full divide-y divide-gray-200">
                                         <thead class="bg-gray-50">
@@ -78,14 +126,17 @@ const executeAction = async (tenant: { id: string; selectedAction?: string }) =>
                                                 <td class="px-6 py-4 whitespace-nowrap">{{ tenant.created_at }}</td>
                                                 <td class="px-6 py-4 whitespace-nowrap">{{ tenant.updated_at }}</td>
                                                 <td class="px-6 py-4 whitespace-nowrap">
-                                                    <select v-model="tenant.selectedAction" class="mr-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                                        <option value="" disabled selected>Select Action</option>
-                                                        <option value="migrate">Migrate</option>
-                                                        <option value="flushdb">FlushDB</option>
-                                                        <option value="rollback">Rollback</option>
-                                                        <option value="delete">Delete</option>
-                                                    </select>
-                                                    <button @click="executeAction(tenant)" class="bg-blue-500 text-white px-4 py-2 rounded">Execute</button>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger class="bg-blue-500 text-white px-4 py-2 rounded">Select Action</DropdownMenuTrigger>
+                                                        <DropdownMenuContent>
+                                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem @click="() => executeAction({ ...tenant, selectedAction: 'migrate' })">Migrate</DropdownMenuItem>
+                                                            <DropdownMenuItem @click="() => executeAction({ ...tenant, selectedAction: 'flushdb' })">FlushDB</DropdownMenuItem>
+                                                            <DropdownMenuItem @click="() => executeAction({ ...tenant, selectedAction: 'rollback' })">Rollback</DropdownMenuItem>
+                                                            <DropdownMenuItem @click="() => executeAction({ ...tenant, selectedAction: 'delete' })">Delete</DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
                                                 </td>
                                             </tr>
                                         </tbody>

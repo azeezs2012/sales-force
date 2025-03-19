@@ -86,4 +86,27 @@ class TenantController extends Controller
 
         \DB::setDefaultConnection('tenant');
     }
+
+    public function create(Request $request)
+    {
+        // Check if tenant with same ID already exists
+        if (Tenant::where('id', $request->id)->exists()) {
+            return response()->json([
+                'message' => 'Tenant with this ID already exists',
+                'error' => 'duplicate_id'
+            ], 422);
+        }
+
+        $tenant = Tenant::create($request->all());
+        $tenant->domains()->create([
+            'domain' => $request->id . '.' . config('tenancy.central_domains')[0],
+        ]);
+        return response()->json(['message' => 'Tenant created', 'tenant' => $tenant]);
+    }
+
+    public function all()
+    {
+        $tenants = Tenant::get();
+        return response()->json(['tenants' => $tenants]);
+    }
 }
