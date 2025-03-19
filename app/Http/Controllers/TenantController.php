@@ -107,6 +107,14 @@ class TenantController extends Controller
     public function all()
     {
         $tenants = Tenant::get();
+        $tenants = $tenants->map(function ($tenant) {
+            return [
+                'id' => $tenant->id,
+                'domain' => $tenant->domains->first()->domain,
+                'created_at' => $tenant->created_at,
+                'updated_at' => $tenant->updated_at
+            ];
+        });
         return response()->json(['tenants' => $tenants]);
     }
 }
