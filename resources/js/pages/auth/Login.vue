@@ -29,7 +29,6 @@ const submit = async () => {
         });
 
         const token = response.data.token;
-        console.log(response.data);
         localStorage.setItem('authToken', token); // Store the token
         window.location.href = '/dashboard';
     } catch (error) {
