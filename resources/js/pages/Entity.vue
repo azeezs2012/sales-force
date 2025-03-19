@@ -39,9 +39,6 @@ const executeAction = async (tenant: { id: string; selectedAction?: string }) =>
         await axios({
             method,
             url,
-            headers: {
-                'Authorization': `Bearer YOUR_ACCESS_TOKEN`
-            }
         });
         alert(`Action ${action} executed successfully for tenant ${tenant.id}.`);
     } catch (error) {

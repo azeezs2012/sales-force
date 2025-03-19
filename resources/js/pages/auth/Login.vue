@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import AuthBase from '@/layouts/AuthLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
+import axios from 'axios';
 
 defineProps<{
     status?: string;
@@ -20,10 +21,23 @@ const form = useForm({
     remember: false,
 });
 
-const submit = () => {
-    form.post(route('login'), {
-        onFinish: () => form.reset('password'),
-    });
+const submit = async () => {
+    try {
+        const response = await axios.post('/login', {
+            email: form.email,
+            password: form.password,
+        });
+
+        const token = response.data.token;
+        console.log(response.data);
+        localStorage.setItem('authToken', token); // Store the token
+        window.location.href = '/dashboard';
+    } catch (error) {
+        console.error('Login failed:', error);
+        alert('Login failed. Please check your credentials.');
+    } finally {
+        form.reset('password');
+    }
 };
 </script>
 
