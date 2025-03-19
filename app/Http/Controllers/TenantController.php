@@ -25,31 +25,24 @@ class TenantController extends Controller
 
     public function migrate($id)
     {
-        $tenant = Tenant::findOrFail($id);
-        $this->setTenantConnection($tenant);
+        set_time_limit(300);
 
-        \Artisan::call('migrate', [
-            '--database' => 'tenant',
-            '--path' => '/database/migrations/tenant',
+        $tenant = Tenant::findOrFail($id);
+
+        \Artisan::call('tenants:migrate', [
+            '--tenants' => $tenant->id,
             '--force' => true,
         ]);
 
-        return response()->json(['message' => 'Migration completed for tenant ' . $id]);
+        return response()->json(['message' => 'Migration completed for tenant ' . $tenant->id]);
     }
 
     public function flushdb($id)
     {
         $tenant = Tenant::findOrFail($id);
-        $this->setTenantConnection($tenant);
 
-        // Drop all tables
-        \DB::connection('tenant')->getSchemaBuilder()->dropAllTables();
-
-        // Run migrations
-        \Artisan::call('migrate', [
-            '--database' => 'tenant',
-            '--path' => '/database/migrations/tenant',
-            '--force' => true,
+        \Artisan::call('tenants:migrate-fresh', [
+            '--tenants' => $tenant->id,
         ]);
 
         return response()->json(['message' => 'Database flushed and migrations run fresh for tenant ' . $id]);
@@ -58,12 +51,9 @@ class TenantController extends Controller
     public function rollback($id)
     {
         $tenant = Tenant::findOrFail($id);
-        $this->setTenantConnection($tenant);
-
-        \Artisan::call('migrate:rollback', [
-            '--database' => 'tenant',
-            '--path' => '/database/migrations/tenant',
-            '--force' => true,
+        
+        \Artisan::call('tenants:rollback', [
+            '--tenants' => $tenant->id,
         ]);
 
         return response()->json(['message' => 'Rollback completed for tenant ' . $id]);
@@ -72,10 +62,6 @@ class TenantController extends Controller
     public function delete($id)
     {
         $tenant = Tenant::findOrFail($id);
-        $this->setTenantConnection($tenant);
-
-        // Optionally, drop the tenant's database
-        \DB::connection('tenant')->getSchemaBuilder()->dropAllTables();
 
         $tenant->delete();
 

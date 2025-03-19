@@ -19,7 +19,7 @@ foreach (config('tenancy.central_domains') as $domain) {
                 Route::post('{id}/migrate', [TenantController::class, 'migrate']);
                 Route::post('{id}/flushdb', [TenantController::class, 'flushdb']);
                 Route::post('{id}/rollback', [TenantController::class, 'rollback']);
-                Route::delete('{id}', [TenantController::class, 'delete']);
+                Route::delete('{id}/delete', [TenantController::class, 'delete']);
             });
         });
     });
