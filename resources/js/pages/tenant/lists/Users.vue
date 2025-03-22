@@ -2,40 +2,40 @@
   <Head title="Users" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+    <div :class="{'dark': appearance === 'dark'}" class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 bg-white dark:bg-neutral-800">
       <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border md:min-h-min">
-        <div class="py-12">
+        <div class="absolute top-0 left-0 py-12">
           <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-              <div class="p-6 text-gray-900">
+            <div class="bg-white dark:bg-neutral-700 overflow-hidden shadow-sm sm:rounded-lg">
+              <div class="p-6 text-gray-900 dark:text-neutral-100">
                 <h2 class="text-2xl font-bold mb-4">User Management</h2>
 
                 <!-- Form to create or update a user -->
                 <form @submit.prevent="handleSubmit" class="mb-6">
                   <div class="flex items-center gap-4">
-                    <input type="text" v-model="form.name" placeholder="Name" class="border rounded p-2" required />
-                    <input type="email" v-model="form.email" placeholder="Email" class="border rounded p-2" required />
-                    <input type="password" v-model="form.password" placeholder="Password" class="border rounded p-2" required />
-                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">{{ isEditing ? 'Update' : 'Create' }} User</button>
+                    <input type="text" v-model="form.name" placeholder="Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
+                    <input type="email" v-model="form.email" placeholder="Email" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
+                    <input type="password" v-model="form.password" placeholder="Password" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
+                    <button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} User</button>
                   </div>
                 </form>
 
                 <div class="overflow-x-auto">
-                  <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+                  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-neutral-800">
                       <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Email</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tbody class="bg-white dark:bg-neutral-700 divide-y divide-gray-200 dark:divide-gray-700">
                       <tr v-for="user in users" :key="user.id">
-                        <td class="px-6 py-4 whitespace-nowrap">{{ user.name }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ user.email }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ user.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ user.email }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
                           <DropdownMenu>
-                            <DropdownMenuTrigger class="bg-blue-500 text-white px-4 py-2 rounded">Select Action</DropdownMenuTrigger>
+                            <DropdownMenuTrigger class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">Select Action</DropdownMenuTrigger>
                             <DropdownMenuContent>
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
@@ -72,6 +72,7 @@ import { useToast } from '@/components/ui/toast/use-toast'
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import type { Ref } from 'vue';
+import { useAppearance } from '@/composables/useAppearance';
 
 const { toast } = useToast()
 
@@ -96,6 +97,8 @@ const form: Ref<Partial<User> & { password?: string }> = ref({
   password: '',
 });
 const isEditing = ref(false);
+
+const { appearance, updateAppearance } = useAppearance();
 
 const fetchUsers = async () => {
   try {
