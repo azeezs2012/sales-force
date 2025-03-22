@@ -36,6 +36,11 @@ class UserController extends Controller
     // Update the specified resource in storage.
     public function update(Request $request, $id)
     {
+        $firstUser = User::orderBy('created_at', 'asc')->first();
+        if ($firstUser && $firstUser->id == $id) {
+            throw new \Exception('The first created user cannot be updated.');
+        }
+
         $user = User::findOrFail($id);
 
         $validatedData = UserValidator::validate($request, $id);
@@ -48,6 +53,11 @@ class UserController extends Controller
     // Remove the specified resource from storage.
     public function destroy($id)
     {
+        $firstUser = User::orderBy('created_at', 'asc')->first();
+        if ($firstUser && $firstUser->id == $id) {
+            throw new \Exception('The first created user cannot be deleted.');
+        }
+
         $user = User::findOrFail($id);
         $user->delete();
 
