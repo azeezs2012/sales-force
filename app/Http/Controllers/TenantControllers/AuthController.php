@@ -9,11 +9,16 @@ use Inertia\Inertia;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
     public function loginPage(Request $request)
     {
+        if (Auth::check()) {
+            return redirect()->route('tenant.dashboard');
+        }
+
         return Inertia::render('tenant/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => $request->session()->get('status'),
