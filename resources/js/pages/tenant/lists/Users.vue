@@ -68,9 +68,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useToast } from '@/components/ui/toast/use-toast'
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import type { Ref } from 'vue';
+
+const { toast } = useToast()
 
 const breadcrumbs = [
   {
@@ -104,10 +107,19 @@ const fetchUsers = async () => {
 };
 
 const handleSubmit = async () => {
-  if (isEditing.value) {
-    await updateUser();
-  } else {
-    await createUser();
+  try {
+    if (isEditing.value) {
+      await updateUser();
+    } else {
+      await createUser();
+    }
+  } catch (err) {
+    const error = err as any;
+    toast({
+      title: 'Error',
+      description: error.response?.data?.message || 'An error occurred.',
+      variant: 'destructive',
+    });
   }
 };
 
@@ -116,8 +128,18 @@ const createUser = async () => {
     await axios.post('/api/users', form.value);
     fetchUsers();
     resetForm();
-  } catch (error) {
-    console.error('Failed to create user:', error);
+    toast({
+      title: 'Success',
+      description: 'User created successfully!',
+      variant: 'default',
+    });
+  } catch (err) {
+    const error = err as any;
+    toast({
+      title: 'Error',
+      description: error.response?.data?.message || 'Failed to create user.',
+      variant: 'destructive',
+    });
   }
 };
 
@@ -131,8 +153,18 @@ const updateUser = async () => {
     await axios.put(`/api/users/${form.value.id}`, form.value);
     fetchUsers();
     resetForm();
-  } catch (error) {
-    console.error('Failed to update user:', error);
+    toast({
+      title: 'Success',
+      description: 'User updated successfully!',
+      variant: 'default',
+    });
+  } catch (err) {
+    const error = err as any;
+    toast({
+      title: 'Error',
+      description: error.response?.data?.message || 'Failed to update user.',
+      variant: 'destructive',
+    });
   }
 };
 
@@ -140,8 +172,18 @@ const deleteUser = async (id: string) => {
   try {
     await axios.delete(`/api/users/${id}`);
     fetchUsers();
-  } catch (error) {
-    console.error('Failed to delete user:', error);
+    toast({
+      title: 'Success',
+      description: 'User deleted successfully!',
+      variant: 'default',
+    });
+  } catch (err) {
+    const error = err as any;
+    toast({
+      title: 'Error',
+      description: 'Failed to delete user.',
+      variant: 'destructive',
+    });
   }
 };
 
