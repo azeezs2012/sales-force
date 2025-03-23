@@ -24,6 +24,7 @@ class SalesRep extends Model
         'created_by',
         'updated_by',
         'deleted_by',
+        'approved_by',
     ];
 
     /**
@@ -56,6 +57,14 @@ class SalesRep extends Model
     public function deleter()
     {
         return $this->belongsTo(User::class, 'deleted_by');
+    }
+
+    /**
+     * Get the user who approved the sales representative.
+     */
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     /**

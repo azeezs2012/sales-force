@@ -12,12 +12,12 @@ return new class extends Migration {
      */
     public function up()
     {
-        Schema::create('branches', function (Blueprint $table) {
+        Schema::create('locations', function (Blueprint $table) {
             $table->id();
-            $table->string('branch_name');
+            $table->string('location_name');
             $table->boolean('active');
             $table->boolean('approved');
-            $table->foreignId('parent')->nullable()->constrained('branches');
+            $table->foreignId('parent')->nullable()->constrained('locations');
             $table->foreignId('created_by')->constrained('users');
             $table->foreignId('updated_by')->nullable()->constrained('users');
             $table->foreignId('deleted_by')->nullable()->constrained('users');
@@ -34,6 +34,6 @@ return new class extends Migration {
      */
     public function down()
     {
-        Schema::dropIfExists('branches');
+        Schema::dropIfExists('locations');
     }
 }; 

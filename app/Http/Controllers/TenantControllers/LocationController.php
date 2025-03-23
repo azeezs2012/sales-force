@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\TenantControllers;
 
-use App\Models\TenantModels\Branch;
+use App\Models\TenantModels\Location;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
-use App\Validators\BranchValidator;
+use App\Validators\LocationValidator;
 
-class BranchController extends Controller
+class LocationController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -17,8 +17,8 @@ class BranchController extends Controller
      */
     public function index()
     {
-        $branches = Branch::with(['childBranches', 'creator', 'updater', 'approver'])->get();
-        return response()->json($branches);
+        $locations = Location::with(['childLocations', 'creator', 'updater', 'approver'])->get();
+        return response()->json($locations);
     }
 
     /**
@@ -29,7 +29,7 @@ class BranchController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = BranchValidator::validate($request->all());
+        $validator = LocationValidator::validate($request->all());
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
@@ -39,15 +39,15 @@ class BranchController extends Controller
             return response()->json(['error' => 'Parent hierarchy exceeds maximum depth of 5.'], 422);
         }
 
-        $branch = new Branch($request->all());
-        $branch->created_by = auth()->id();
-        $branch->created_at = now();
-        if ($branch->approved) {
-            $branch->approved_by = auth()->id();
+        $location = new Location($request->all());
+        $location->created_by = auth()->id();
+        $location->created_at = now();
+        if ($location->approved) {
+            $location->approved_by = auth()->id();
         }
-        $branch->save();
+        $location->save();
 
-        return response()->json($branch, 201);
+        return response()->json($location, 201);
     }
 
     /**
@@ -58,8 +58,8 @@ class BranchController extends Controller
      */
     public function show($id)
     {
-        $branch = Branch::findOrFail($id);
-        return response()->json($branch);
+        $location = Location::findOrFail($id);
+        return response()->json($location);
     }
 
     /**
@@ -71,9 +71,9 @@ class BranchController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $branch = Branch::findOrFail($id);
+        $location = Location::findOrFail($id);
 
-        $validator = BranchValidator::validate($request->all(), $branch->id);
+        $validator = LocationValidator::validate($request->all(), $location->id);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
@@ -83,15 +83,15 @@ class BranchController extends Controller
             return response()->json(['error' => 'Parent hierarchy exceeds maximum depth of 5.'], 422);
         }
 
-        $branch->fill($request->all());
-        $branch->updated_by = auth()->id();
-        $branch->updated_at = now();
-        if ($branch->approved) {
-            $branch->approved_by = auth()->id();
+        $location->fill($request->all());
+        $location->updated_by = auth()->id();
+        $location->updated_at = now();
+        if ($location->approved) {
+            $location->approved_by = auth()->id();
         }
-        $branch->save();
+        $location->save();
 
-        return response()->json($branch);
+        return response()->json($location);
     }
 
     /**
@@ -102,35 +102,35 @@ class BranchController extends Controller
      */
     public function destroy($id)
     {
-        $branch = Branch::findOrFail($id);
+        $location = Location::findOrFail($id);
 
-        // Check if the branch has child branches
-        $hasChildren = Branch::where('parent', $id)->exists();
+        // Check if the location has child locations
+        $hasChildren = Location::where('parent', $id)->exists();
         if ($hasChildren) {
-            throw new \Exception('Cannot delete branch with child branches.');
+            throw new \Exception('Cannot delete location with child locations.');
         }
 
-        $branch->deleted_by = auth()->id();
-        $branch->deleted_at = now();
-        $branch->save();
-        $branch->delete();
+        $location->deleted_by = auth()->id();
+        $location->deleted_at = now();
+        $location->save();
+        $location->delete();
 
         return response()->json(null, 204);
     }
 
     /**
-     * Check if the branch has a valid parent hierarchy.
+     * Check if the location has a valid parent hierarchy.
      *
-     * @param  int  $branchId
+     * @param  int  $locationId
      * @return bool
      */
-    private function hasValidParentHierarchy($branchId)
+    private function hasValidParentHierarchy($locationId)
     {
         $depth = 0;
-        $currentBranch = Branch::find($branchId);
+        $currentLocation = Location::find($locationId);
 
-        while ($currentBranch && $currentBranch->parent && $depth < 5) {
-            $currentBranch = Branch::find($currentBranch->parent);
+        while ($currentLocation && $currentLocation->parent && $depth < 5) {
+            $currentLocation = Location::find($currentLocation->parent);
             $depth++;
         }
 

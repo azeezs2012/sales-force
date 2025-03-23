@@ -37,6 +37,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Sales Rep Name</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Active</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved By</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Created By</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Updated By</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Actions</th>
@@ -51,6 +52,9 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ salesRep.active ? 'Yes' : 'No' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ salesRep.approved ? 'Yes' : 'No' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
+                          {{ salesRep.approver ? salesRep.approver.name : 'N/A' }}
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
                           {{ salesRep.creator ? salesRep.creator.name : 'N/A' }}
                         </td>
@@ -116,6 +120,7 @@ interface SalesRep {
   childSalesReps?: SalesRep[];
   creator?: { name: string };
   updater?: { name: string };
+  approver?: { name: string };
 }
 
 const salesReps: Ref<SalesRep[]> = ref([]);

@@ -17,7 +17,7 @@ class SalesRepController extends Controller
      */
     public function index()
     {
-        $salesReps = SalesRep::with(['childSalesReps', 'creator', 'updater'])->get();
+        $salesReps = SalesRep::with(['childSalesReps', 'creator', 'updater', 'approver'])->get();
         return response()->json($salesReps);
     }
 
@@ -36,12 +36,15 @@ class SalesRepController extends Controller
         }
 
         if ($request->parent && !$this->hasValidParentHierarchy($request->parent)) {
-            return response()->json(['error' => 'Parent hierarchy exceeds maximum depth of 5.'], 422);
+            throw new \Exception('Parent hierarchy exceeds maximum depth of 5.');
         }
 
         $salesRep = new SalesRep($request->all());
         $salesRep->created_by = auth()->id();
         $salesRep->created_at = now();
+        if ($salesRep->approved) {
+            $salesRep->approved_by = auth()->id();
+        }
         $salesRep->save();
 
         return response()->json($salesRep, 201);
@@ -77,12 +80,15 @@ class SalesRepController extends Controller
         }
 
         if ($request->parent && !$this->hasValidParentHierarchy($request->parent)) {
-            return response()->json(['error' => 'Parent hierarchy exceeds maximum depth of 5.'], 422);
+            throw new \Exception('Parent hierarchy exceeds maximum depth of 5.');
         }
 
         $salesRep->fill($request->all());
         $salesRep->updated_by = auth()->id();
         $salesRep->updated_at = now();
+        if ($salesRep->approved) {
+            $salesRep->approved_by = auth()->id();
+        }
         $salesRep->save();
 
         return response()->json($salesRep);

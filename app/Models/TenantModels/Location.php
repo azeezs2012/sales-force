@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\User;
 
-class Branch extends Model
+class Location extends Model
 {
     use HasFactory, SoftDeletes;
 
@@ -17,7 +17,7 @@ class Branch extends Model
      * @var array
      */
     protected $fillable = [
-        'branch_name',
+        'location_name',
         'active',
         'approved',
         'parent',
@@ -28,15 +28,15 @@ class Branch extends Model
     ];
 
     /**
-     * Get the parent branch.
+     * Get the parent location.
      */
-    public function parentBranch()
+    public function parentLocation()
     {
-        return $this->belongsTo(Branch::class, 'parent');
+        return $this->belongsTo(Location::class, 'parent');
     }
 
     /**
-     * Get the user who created the branch.
+     * Get the user who created the location.
      */
     public function creator()
     {
@@ -44,7 +44,7 @@ class Branch extends Model
     }
 
     /**
-     * Get the user who updated the branch.
+     * Get the user who updated the location.
      */
     public function updater()
     {
@@ -52,7 +52,7 @@ class Branch extends Model
     }
 
     /**
-     * Get the user who deleted the branch.
+     * Get the user who deleted the location.
      */
     public function deleter()
     {
@@ -60,7 +60,7 @@ class Branch extends Model
     }
 
     /**
-     * Get the user who approved the branch.
+     * Get the user who approved the location.
      */
     public function approver()
     {
@@ -68,10 +68,10 @@ class Branch extends Model
     }
 
     /**
-     * Get the child branches.
+     * Get the child locations.
      */
-    public function childBranches()
+    public function childLocations()
     {
-        return $this->hasMany(Branch::class, 'parent');
+        return $this->hasMany(Location::class, 'parent');
     }
 } 

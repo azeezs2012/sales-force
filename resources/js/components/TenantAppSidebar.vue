@@ -29,6 +29,11 @@ const mainNavItems: NavItem[] = [
         href: '/sales-reps',
         icon: LayoutGrid,
     },
+    {
+        title: 'Locations',
+        href: '/locations',
+        icon: LayoutGrid,
+    },
 ];
 
 const footerNavItems: NavItem[] = [
