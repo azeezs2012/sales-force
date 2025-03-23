@@ -16,12 +16,16 @@
                     <input type="text" v-model="form.branch_name" placeholder="Branch Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
                     <input type="checkbox" v-model="form.active" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Active
                     <input type="checkbox" v-model="form.approved" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Approved
-                    <select v-model="form.parent" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
-                      <option value="" disabled>Select Parent Branch</option>
-                      <option v-for="branch in branches" :key="branch.id" :value="branch.id">
-                        {{ branch.branch_name }}
-                      </option>
-                    </select>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
+                        {{ form.parent ? branches.find(branch => branch.id === form.parent)?.branch_name : 'Select Parent Branch' }}
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem v-for="branch in branches" :key="branch.id" @click="form.parent = branch.id">
+                          {{ ' '.repeat(getIndentationLevel(branch) * 2) + branch.branch_name }}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} Branch</button>
                   </div>
                 </form>
@@ -38,7 +42,11 @@
                     </thead>
                     <tbody class="bg-white dark:bg-neutral-700 divide-y divide-gray-200 dark:divide-gray-700">
                       <tr v-for="branch in branches" :key="branch.id">
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ branch.branch_name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
+                          <span :style="{ paddingLeft: `${getIndentationLevel(branch)}rem` }">
+                            <span v-if="branch.parent">• </span>{{ branch.branch_name }}
+                          </span>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ branch.active ? 'Yes' : 'No' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ branch.approved ? 'Yes' : 'No' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -77,7 +85,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/components/ui/toast/use-toast';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, defineComponent, h, VNode } from 'vue';
 import axios from 'axios';
 import type { Ref } from 'vue';
 import { useAppearance } from '@/composables/useAppearance';
@@ -97,6 +105,7 @@ interface Branch {
   active: boolean;
   approved: boolean;
   parent?: string;
+  childBranches?: Branch[];
 }
 
 const branches: Ref<Branch[]> = ref([]);
@@ -114,17 +123,35 @@ const { appearance, updateAppearance } = useAppearance();
 const fetchActiveApprovedBranches = async () => {
   try {
     const response = await axios.get('/api/branches');
-    branches.value = response.data.filter((branch: Branch) => branch.active && branch.approved);
+    const allBranches = sortBranchesHierarchically(response.data);
+    branches.value = allBranches.filter((branch: Branch) => branch.active && branch.approved);
   } catch (error) {
     console.error('Failed to fetch active and approved branches:', error);
   }
 };
 
+const sortBranchesHierarchically = (branches: Branch[]): Branch[] => {
+  const branchMap = new Map<string, Branch>();
+  branches.forEach(branch => branchMap.set(branch.id, branch));
+
+  const sortedBranches: Branch[] = [];
+
+  const addBranchWithChildren = (branch: Branch) => {
+    sortedBranches.push(branch);
+    const children = branches.filter(b => b.parent === branch.id);
+    children.forEach(addBranchWithChildren);
+  };
+
+  branches.filter(branch => !branch.parent).forEach(addBranchWithChildren);
+
+  return sortedBranches;
+};
+
 const fetchBranches = async () => {
   try {
     const response = await axios.get('/api/branches');
-    branches.value = response.data;
-    fetchActiveApprovedBranches();
+    const allBranches = response.data;
+    branches.value = sortBranchesHierarchically(allBranches);
   } catch (error) {
     console.error('Failed to fetch branches:', error);
   }
@@ -219,6 +246,17 @@ const resetForm = () => {
 onMounted(() => {
   fetchBranches();
 });
+
+// Function to calculate indentation level based on hierarchy
+const getIndentationLevel = (branch: Branch): number => {
+  let level = 0;
+  let currentBranch = branch;
+  while (currentBranch.parent) {
+    level++;
+    currentBranch = branches.value.find(b => b.id === currentBranch.parent) || currentBranch;
+  }
+  return level * 1.5; // Adjust multiplier for desired indentation
+};
 </script>
 
 <style scoped>

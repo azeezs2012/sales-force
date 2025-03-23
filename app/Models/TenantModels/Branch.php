@@ -56,4 +56,12 @@ class Branch extends Model
     {
         return $this->belongsTo(User::class, 'deleted_by');
     }
+
+    /**
+     * Get the child branches.
+     */
+    public function childBranches()
+    {
+        return $this->hasMany(Branch::class, 'parent');
+    }
 } 
