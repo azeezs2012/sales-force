@@ -17,7 +17,7 @@ class BranchController extends Controller
      */
     public function index()
     {
-        $branches = Branch::with('childBranches')->get();
+        $branches = Branch::with(['childBranches', 'creator', 'updater'])->get();
         return response()->json($branches);
     }
 

@@ -37,6 +37,8 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Branch Name</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Active</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Created By</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Updated By</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
@@ -49,6 +51,12 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ branch.active ? 'Yes' : 'No' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ branch.approved ? 'Yes' : 'No' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
+                          {{ branch.creator ? branch.creator.name : null }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
+                          {{ branch.updater ? branch.updater.name : null }}
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                           <DropdownMenu>
                             <DropdownMenuTrigger class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">Select Action</DropdownMenuTrigger>
@@ -106,14 +114,16 @@ interface Branch {
   approved: boolean;
   parent?: string;
   childBranches?: Branch[];
+  creator?: { name: string };
+  updater?: { name: string };
 }
 
 const branches: Ref<Branch[]> = ref([]);
 const form: Ref<Partial<Branch>> = ref({
   id: undefined,
   branch_name: '',
-  active: false,
-  approved: false,
+  active: true,
+  approved: true,
   parent: undefined,
 });
 const isEditing = ref(false);
