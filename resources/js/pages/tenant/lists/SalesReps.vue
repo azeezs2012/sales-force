@@ -1,5 +1,5 @@
 <template>
-  <Head title="Branches" />
+  <Head title="Sales Representatives" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
     <div :class="{'dark': appearance === 'dark'}" class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 bg-white dark:bg-neutral-800">
@@ -8,25 +8,25 @@
           <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-neutral-700 overflow-hidden shadow-sm sm:rounded-lg">
               <div class="p-6 text-gray-900 dark:text-neutral-100">
-                <h2 class="text-2xl font-bold mb-4">Branch Management</h2>
+                <h2 class="text-2xl font-bold mb-4">Sales Representative Management</h2>
 
-                <!-- Form to create or update a branch -->
+                <!-- Form to create or update a sales representative -->
                 <form @submit.prevent="handleSubmit" class="mb-6">
                   <div class="flex items-center gap-4">
-                    <input type="text" v-model="form.branch_name" placeholder="Branch Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
+                    <input type="text" v-model="form.sales_rep_name" placeholder="Sales Rep Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
                     <input type="checkbox" v-model="form.active" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Active
                     <input type="checkbox" v-model="form.approved" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Approved
                     <DropdownMenu>
                       <DropdownMenuTrigger class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
-                        {{ form.parent ? branches.find(branch => branch.id === form.parent)?.branch_name : 'Select Parent Branch' }}
+                        {{ form.parent ? salesReps.find(salesRep => salesRep.id === form.parent)?.sales_rep_name : 'Select Parent Sales Rep' }}
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuItem v-for="branch in branches" :key="branch.id" @click="form.parent = branch.id">
-                          {{ ' '.repeat(getIndentationLevel(branch) * 2) + branch.branch_name }}
+                        <DropdownMenuItem v-for="salesRep in salesReps" :key="salesRep.id" @click="form.parent = salesRep.id">
+                          {{ ' '.repeat(getIndentationLevel(salesRep) * 2) + salesRep.sales_rep_name }}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    <button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} Branch</button>
+                    <button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} Sales Rep</button>
                   </div>
                 </form>
 
@@ -34,7 +34,7 @@
                   <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead class="bg-gray-50 dark:bg-neutral-800">
                       <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Branch Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Sales Rep Name</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Active</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Created By</th>
@@ -43,19 +43,19 @@
                       </tr>
                     </thead>
                     <tbody class="bg-white dark:bg-neutral-700 divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr v-for="branch in branches" :key="branch.id">
+                      <tr v-for="salesRep in salesReps" :key="salesRep.id">
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          <span :style="{ paddingLeft: `${getIndentationLevel(branch)}rem` }">
-                            <span v-if="branch.parent">• </span>{{ branch.branch_name }}
+                          <span :style="{ paddingLeft: `${getIndentationLevel(salesRep)}rem` }">
+                            <span v-if="salesRep.parent">• </span>{{ salesRep.sales_rep_name }}
                           </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ branch.active ? 'Yes' : 'No' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ branch.approved ? 'Yes' : 'No' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ salesRep.active ? 'Yes' : 'No' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ salesRep.approved ? 'Yes' : 'No' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ branch.creator ? branch.creator.name : null }}
+                          {{ salesRep.creator ? salesRep.creator.name : 'N/A' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ branch.updater ? branch.updater.name : null }}
+                          {{ salesRep.updater ? salesRep.updater.name : 'N/A' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                           <DropdownMenu>
@@ -63,8 +63,8 @@
                             <DropdownMenuContent>
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem @click="() => editBranch(branch)">Edit</DropdownMenuItem>
-                              <DropdownMenuItem @click="() => deleteBranch(branch.id)">Delete</DropdownMenuItem>
+                              <DropdownMenuItem @click="() => editSalesRep(salesRep)">Edit</DropdownMenuItem>
+                              <DropdownMenuItem @click="() => deleteSalesRep(salesRep.id)">Delete</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
@@ -102,26 +102,26 @@ const { toast } = useToast()
 
 const breadcrumbs = [
   {
-    title: 'Branches',
-    href: '/branches',
+    title: 'Sales Representatives',
+    href: '/sales-reps',
   },
 ];
 
-interface Branch {
+interface SalesRep {
   id: string;
-  branch_name: string;
+  sales_rep_name: string;
   active: boolean;
   approved: boolean;
   parent?: string;
-  childBranches?: Branch[];
+  childSalesReps?: SalesRep[];
   creator?: { name: string };
   updater?: { name: string };
 }
 
-const branches: Ref<Branch[]> = ref([]);
-const form: Ref<Partial<Branch>> = ref({
+const salesReps: Ref<SalesRep[]> = ref([]);
+const form: Ref<Partial<SalesRep>> = ref({
   id: undefined,
-  branch_name: '',
+  sales_rep_name: '',
   active: true,
   approved: true,
   parent: undefined,
@@ -130,49 +130,49 @@ const isEditing = ref(false);
 
 const { appearance, updateAppearance } = useAppearance();
 
-const fetchActiveApprovedBranches = async () => {
+const fetchActiveApprovedSalesReps = async () => {
   try {
-    const response = await axios.get('/api/branches');
-    const allBranches = sortBranchesHierarchically(response.data);
-    branches.value = allBranches.filter((branch: Branch) => branch.active && branch.approved);
+    const response = await axios.get('/api/sales-reps');
+    const allSalesReps = sortSalesRepsHierarchically(response.data);
+    salesReps.value = allSalesReps.filter((salesRep: SalesRep) => salesRep.active && salesRep.approved);
   } catch (error) {
-    console.error('Failed to fetch active and approved branches:', error);
+    console.error('Failed to fetch active and approved sales representatives:', error);
   }
 };
 
-const sortBranchesHierarchically = (branches: Branch[]): Branch[] => {
-  const branchMap = new Map<string, Branch>();
-  branches.forEach(branch => branchMap.set(branch.id, branch));
+const sortSalesRepsHierarchically = (salesReps: SalesRep[]): SalesRep[] => {
+  const salesRepMap = new Map<string, SalesRep>();
+  salesReps.forEach(salesRep => salesRepMap.set(salesRep.id, salesRep));
 
-  const sortedBranches: Branch[] = [];
+  const sortedSalesReps: SalesRep[] = [];
 
-  const addBranchWithChildren = (branch: Branch) => {
-    sortedBranches.push(branch);
-    const children = branches.filter(b => b.parent === branch.id);
-    children.forEach(addBranchWithChildren);
+  const addSalesRepWithChildren = (salesRep: SalesRep) => {
+    sortedSalesReps.push(salesRep);
+    const children = salesReps.filter(s => s.parent === salesRep.id);
+    children.forEach(addSalesRepWithChildren);
   };
 
-  branches.filter(branch => !branch.parent).forEach(addBranchWithChildren);
+  salesReps.filter(salesRep => !salesRep.parent).forEach(addSalesRepWithChildren);
 
-  return sortedBranches;
+  return sortedSalesReps;
 };
 
-const fetchBranches = async () => {
+const fetchSalesReps = async () => {
   try {
-    const response = await axios.get('/api/branches');
-    const allBranches = response.data;
-    branches.value = sortBranchesHierarchically(allBranches);
+    const response = await axios.get('/api/sales-reps');
+    const allSalesReps = response.data;
+    salesReps.value = sortSalesRepsHierarchically(allSalesReps);
   } catch (error) {
-    console.error('Failed to fetch branches:', error);
+    console.error('Failed to fetch sales representatives:', error);
   }
 };
 
 const handleSubmit = async () => {
   try {
     if (isEditing.value) {
-      await updateBranch();
+      await updateSalesRep();
     } else {
-      await createBranch();
+      await createSalesRep();
     }
   } catch (err) {
     const error = err as any;
@@ -184,86 +184,86 @@ const handleSubmit = async () => {
   }
 };
 
-const createBranch = async () => {
+const createSalesRep = async () => {
   try {
-    await axios.post('/api/branches', form.value);
-    fetchBranches();
+    await axios.post('/api/sales-reps', form.value);
+    fetchSalesReps();
     resetForm();
     toast({
       title: 'Success',
-      description: 'Branch created successfully!',
+      description: 'Sales representative created successfully!',
       variant: 'default',
     });
   } catch (err) {
     const error = err as any;
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to create branch.',
+      description: error.response?.data?.message || 'Failed to create sales representative.',
       variant: 'destructive',
     });
   }
 };
 
-const editBranch = (branch: Branch) => {
-  form.value = { ...branch };
+const editSalesRep = (salesRep: SalesRep) => {
+  form.value = { ...salesRep };
   isEditing.value = true;
 };
 
-const updateBranch = async () => {
+const updateSalesRep = async () => {
   try {
-    await axios.put(`/api/branches/${form.value.id}`, form.value);
-    fetchBranches();
+    await axios.put(`/api/sales-reps/${form.value.id}`, form.value);
+    fetchSalesReps();
     resetForm();
     toast({
       title: 'Success',
-      description: 'Branch updated successfully!',
+      description: 'Sales representative updated successfully!',
       variant: 'default',
     });
   } catch (err) {
     const error = err as any;
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to update branch.',
+      description: error.response?.data?.message || 'Failed to update sales representative.',
       variant: 'destructive',
     });
   }
 };
 
-const deleteBranch = async (id: string) => {
+const deleteSalesRep = async (id: string) => {
   try {
-    await axios.delete(`/api/branches/${id}`);
-    fetchBranches();
+    await axios.delete(`/api/sales-reps/${id}`);
+    fetchSalesReps();
     toast({
       title: 'Success',
-      description: 'Branch deleted successfully!',
+      description: 'Sales representative deleted successfully!',
       variant: 'default',
     });
   } catch (err) {
     const error = err as any;
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to delete branch.',
+      description: error.response?.data?.message || 'Failed to delete sales representative.',
       variant: 'destructive',
     });
   }
 };
 
 const resetForm = () => {
-  form.value = { id: undefined, branch_name: '', active: true, approved: true, parent: undefined };
+  form.value = { id: undefined, sales_rep_name: '', active: true, approved: true, parent: undefined };
   isEditing.value = false;
 };
 
 onMounted(() => {
-  fetchBranches();
+  fetchSalesReps();
 });
 
 // Function to calculate indentation level based on hierarchy
-const getIndentationLevel = (branch: Branch): number => {
+const getIndentationLevel = (salesRep: SalesRep): number => {
   let level = 0;
-  let currentBranch = branch;
-  while (currentBranch.parent) {
+  let currentSalesRep = salesRep;
+  while (currentSalesRep.parent) {
     level++;
-    currentBranch = branches.value.find(b => b.id === currentBranch.parent) || currentBranch;
+    currentSalesRep = salesReps.value.find(s => s.id === currentSalesRep.parent) || currentSalesRep;
   }
   return level * 1.5; // Adjust multiplier for desired indentation
 };

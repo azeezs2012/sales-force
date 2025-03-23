@@ -9,6 +9,7 @@ use App\Http\Controllers\TenantControllers\AuthController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\TenantControllers\UserController;
 use App\Http\Controllers\TenantControllers\BranchController;
+use App\Http\Controllers\TenantControllers\SalesRepController;
 use Inertia\Inertia;
 /*
 |--------------------------------------------------------------------------
@@ -43,6 +44,10 @@ Route::middleware([
         Route::get('branches', function () {
             return Inertia::render('tenant/lists/Branches');
         })->name('tenant.list.branches');
+
+        Route::get('sales-reps', function () {
+            return Inertia::render('tenant/lists/SalesReps');
+        })->name('tenant.list.sales-reps');
     });
 
     Route::prefix('api')->group(function () {
@@ -57,5 +62,10 @@ Route::middleware([
         Route::get('/branches/{id}', [BranchController::class, 'show']);
         Route::put('/branches/{id}', [BranchController::class, 'update']);
         Route::delete('/branches/{id}', [BranchController::class, 'destroy']);
+        Route::get('/sales-reps', [SalesRepController::class, 'index']);
+        Route::post('/sales-reps', [SalesRepController::class, 'store']);
+        Route::get('/sales-reps/{id}', [SalesRepController::class, 'show']);
+        Route::put('/sales-reps/{id}', [SalesRepController::class, 'update']);
+        Route::delete('/sales-reps/{id}', [SalesRepController::class, 'destroy']);
     });
 });

@@ -24,6 +24,11 @@ const mainNavItems: NavItem[] = [
         href: '/branches',
         icon: LayoutGrid,
     },
+    {
+        title: 'Sales Reps',
+        href: '/sales-reps',
+        icon: LayoutGrid,
+    },
 ];
 
 const footerNavItems: NavItem[] = [
