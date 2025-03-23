@@ -28,6 +28,7 @@ class TenancyServiceProvider extends ServiceProvider
                     Jobs\CreateDatabase::class,
                     \App\Jobs\MigrateTenantDatabase::class,
                     \App\Jobs\TenantAdminUser::class,
+                    \App\Jobs\AccountTypeSeeder::class,
                     // Jobs\SeedDatabase::class,
 
                     // Your own jobs to prepare the tenant.
