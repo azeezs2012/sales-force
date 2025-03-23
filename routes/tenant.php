@@ -8,6 +8,7 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 use App\Http\Controllers\TenantControllers\AuthController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\TenantControllers\UserController;
+use App\Http\Controllers\TenantControllers\BranchController;
 use Inertia\Inertia;
 /*
 |--------------------------------------------------------------------------
@@ -38,6 +39,10 @@ Route::middleware([
         Route::get('users', function () {
             return Inertia::render('tenant/lists/Users');
         })->name('tenant.list.users');
+
+        Route::get('branches', function () {
+            return Inertia::render('tenant/lists/Branches');
+        })->name('tenant.list.branches');
     });
 
     Route::prefix('api')->group(function () {
@@ -47,5 +52,10 @@ Route::middleware([
         Route::get('/users/{id}', [UserController::class, 'show']);
         Route::put('/users/{id}', [UserController::class, 'update']);
         Route::delete('/users/{id}', [UserController::class, 'destroy']);
+        Route::get('/branches', [BranchController::class, 'index']);
+        Route::post('/branches', [BranchController::class, 'store']);
+        Route::get('/branches/{id}', [BranchController::class, 'show']);
+        Route::put('/branches/{id}', [BranchController::class, 'update']);
+        Route::delete('/branches/{id}', [BranchController::class, 'destroy']);
     });
 });
