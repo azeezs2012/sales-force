@@ -14,11 +14,11 @@
                 <form @submit.prevent="handleSubmit" class="mb-6">
                   <div class="flex flex-wrap items-center gap-4">
                     <div class="flex gap-4 w-full">
-                      <input type="text" v-model="form.name" placeholder="Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100 w-60" required />
                       <input type="text" v-model="form.code" placeholder="Sales Rep Code" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100 w-60" required />
-                      <input type="email" v-model="form.email" placeholder="Email" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100 w-60" required />
+                      <input type="text" v-model="form.name" placeholder="Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100 w-60" required />
                     </div>
                     <div class="flex gap-4 w-full">
+                      <input type="email" v-model="form.email" placeholder="Email" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100 w-60" required />
                       <div class="relative w-60">
                         <Input :type="showPassword ? 'text' : 'password'" v-model="form.password" placeholder="Password" class="pr-10 w-full" required />
                         <Button type="button" @click="togglePasswordVisibility" class="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5">
@@ -26,8 +26,8 @@
                         </Button>
                       </div>
                       <Button type="button" @click="generateStrongPassword" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">Generate Password</Button>
-                      <input type="checkbox" v-model="form.active" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Active
-                      <input type="checkbox" v-model="form.approved" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Approved
+                    </div>
+                    <div class="flex gap-4 w-full items-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
                           {{ form.parent ? salesReps.find(salesRep => salesRep.id === form.parent)?.code : 'Select Parent Sales Rep' }}
@@ -38,6 +38,9 @@
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      <input type="checkbox" v-model="form.active" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Active
+                      <input type="checkbox" v-model="form.approved" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Approved
+                      
                       <Button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} Sales Rep</Button>
                     </div>
                   </div>
@@ -47,7 +50,8 @@
                   <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead class="bg-gray-50 dark:bg-neutral-800">
                       <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Sales Rep Code</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Code</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Email</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Active</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved By</th>
@@ -63,6 +67,7 @@
                             <span v-if="salesRep.parent">• </span>{{ salesRep.code }}
                           </span>
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ salesRep.user?.email }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ salesRep.active ? 'Yes' : 'No' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ salesRep.approved ? 'Yes' : 'No' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
@@ -130,6 +135,7 @@ interface SalesRep {
   id?: number;
   name?: string;
   code?: string;
+  email?: string;
   password?: string;
   active?: boolean;
   approved?: boolean;
@@ -138,6 +144,7 @@ interface SalesRep {
   creator?: { name: string };
   updater?: { name: string };
   approver?: { name: string };
+  user?: { name: string; email: string };
 }
 
 const salesReps: Ref<SalesRep[]> = ref([]);
@@ -232,7 +239,11 @@ const createSalesRep = async () => {
 };
 
 const editSalesRep = (salesRep: SalesRep) => {
-  form.value = { ...salesRep, name : salesRep.user.name, email : salesRep.user.email };
+  form.value = {
+    ...salesRep,
+    name: salesRep.user?.name || '',
+    email: salesRep.user?.email || '',
+  };
   isEditing.value = true;
 };
 
