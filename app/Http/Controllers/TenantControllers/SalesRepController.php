@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 use App\Validators\SalesRepValidator;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class SalesRepController extends Controller
 {
@@ -17,7 +19,7 @@ class SalesRepController extends Controller
      */
     public function index()
     {
-        $salesReps = SalesRep::with(['childSalesReps', 'creator', 'updater', 'approver'])->get();
+        $salesReps = SalesRep::with(['childSalesReps', 'creator', 'updater', 'approver', 'user'])->get();
         return response()->json($salesReps);
     }
 
@@ -39,15 +41,30 @@ class SalesRepController extends Controller
             throw new \Exception('Parent hierarchy exceeds maximum depth of 5.');
         }
 
-        $salesRep = new SalesRep($request->all());
-        $salesRep->created_by = auth()->id();
-        $salesRep->created_at = now();
-        if ($salesRep->approved) {
-            $salesRep->approved_by = auth()->id();
-        }
-        $salesRep->save();
+        DB::transaction(function () use ($request) {
+            // Create a user for the sales rep
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email, // Assuming email is provided in the request
+                'password' => bcrypt('defaultpassword'), // Set a default password or generate one
+                'role' => 'sales_rep',
+            ]);
 
-        return response()->json($salesRep, 201);
+            $salesRep = new SalesRep();
+            $salesRep->code = $request->code;
+            $salesRep->active = $request->active;
+            $salesRep->approved = $request->approved;
+            $salesRep->parent = $request->parent;
+            $salesRep->created_by = auth()->id();
+            $salesRep->created_at = now();
+            $salesRep->user_id = $user->id;
+            if ($salesRep->approved) {
+                $salesRep->approved_by = auth()->id();
+            }
+            $salesRep->save();
+        });
+
+        return response()->json(['message' => 'Sales representative created successfully.'], 201);
     }
 
     /**
@@ -83,13 +100,21 @@ class SalesRepController extends Controller
             throw new \Exception('Parent hierarchy exceeds maximum depth of 5.');
         }
 
-        $salesRep->fill($request->all());
-        $salesRep->updated_by = auth()->id();
-        $salesRep->updated_at = now();
-        if ($salesRep->approved) {
-            $salesRep->approved_by = auth()->id();
-        }
-        $salesRep->save();
+        DB::transaction(function () use ($request, $salesRep) {
+            // Update the user associated with the sales rep
+            $user = $salesRep->user;
+            $user->name = $request->name;
+            $user->email = $request->email;
+            $user->save();
+
+            $salesRep->fill($request->all());
+            $salesRep->updated_by = auth()->id();
+            $salesRep->updated_at = now();
+            if ($salesRep->approved) {
+                $salesRep->approved_by = auth()->id();
+            }
+            $salesRep->save();
+        });
 
         return response()->json($salesRep);
     }
@@ -102,20 +127,31 @@ class SalesRepController extends Controller
      */
     public function destroy($id)
     {
-        $salesRep = SalesRep::findOrFail($id);
+        DB::transaction(function () use ($id) {
+            $salesRep = SalesRep::findOrFail($id);
 
-        // Check if the sales representative has child sales representatives
-        $hasChildren = SalesRep::where('parent', $id)->exists();
-        if ($hasChildren) {
-            throw new \Exception('Cannot delete sales representative with child sales representatives.');
-        }
+            // Check if the sales representative has child sales representatives
+            $hasChildren = SalesRep::where('parent', $id)->exists();
+            if ($hasChildren) {
+                throw new \Exception('Cannot delete sales representative with child sales representatives.');
+            }
 
-        $salesRep->deleted_by = auth()->id();
-        $salesRep->deleted_at = now();
-        $salesRep->save();
-        $salesRep->delete();
+            // Soft delete the sales rep first
+            $salesRep->deleted_by = auth()->id();
+            $salesRep->deleted_at = now();
+            $salesRep->save();
 
-        return response()->json(null, 204);
+            $user = $salesRep->user;
+
+            $salesRep->forceDelete();
+
+            if ($user) {
+                $user->forceDelete(); // Force delete the user to avoid foreign key issues
+            }
+            
+        });
+
+        return response()->json(['message' => 'Sales representative deleted successfully.'], 204);
     }
 
     /**

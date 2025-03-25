@@ -12,21 +12,34 @@
 
                 <!-- Form to create or update a sales representative -->
                 <form @submit.prevent="handleSubmit" class="mb-6">
-                  <div class="flex items-center gap-4">
-                    <input type="text" v-model="form.sales_rep_name" placeholder="Sales Rep Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
-                    <input type="checkbox" v-model="form.active" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Active
-                    <input type="checkbox" v-model="form.approved" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Approved
-                    <DropdownMenu>
-                      <DropdownMenuTrigger class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
-                        {{ form.parent ? salesReps.find(salesRep => salesRep.id === form.parent)?.sales_rep_name : 'Select Parent Sales Rep' }}
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem v-for="salesRep in salesReps" :key="salesRep.id" @click="form.parent = salesRep.id">
-                          {{ ' '.repeat(getIndentationLevel(salesRep) * 2) + salesRep.sales_rep_name }}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} Sales Rep</button>
+                  <div class="flex flex-wrap items-center gap-4">
+                    <div class="flex gap-4 w-full">
+                      <input type="text" v-model="form.name" placeholder="Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100 w-60" required />
+                      <input type="text" v-model="form.code" placeholder="Sales Rep Code" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100 w-60" required />
+                      <input type="email" v-model="form.email" placeholder="Email" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100 w-60" required />
+                    </div>
+                    <div class="flex gap-4 w-full">
+                      <div class="relative w-60">
+                        <Input :type="showPassword ? 'text' : 'password'" v-model="form.password" placeholder="Password" class="pr-10 w-full" required />
+                        <Button type="button" @click="togglePasswordVisibility" class="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5">
+                          👁️
+                        </Button>
+                      </div>
+                      <Button type="button" @click="generateStrongPassword" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">Generate Password</Button>
+                      <input type="checkbox" v-model="form.active" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Active
+                      <input type="checkbox" v-model="form.approved" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Approved
+                      <DropdownMenu>
+                        <DropdownMenuTrigger class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
+                          {{ form.parent ? salesReps.find(salesRep => salesRep.id === form.parent)?.code : 'Select Parent Sales Rep' }}
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem v-for="salesRep in salesReps" :key="salesRep.id" @click="form.parent = salesRep.id">
+                            {{ ' '.repeat(getIndentationLevel(salesRep) * 2) + salesRep.code }}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <Button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} Sales Rep</Button>
+                    </div>
                   </div>
                 </form>
 
@@ -34,7 +47,7 @@
                   <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead class="bg-gray-50 dark:bg-neutral-800">
                       <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Sales Rep Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Sales Rep Code</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Active</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved By</th>
@@ -47,7 +60,7 @@
                       <tr v-for="salesRep in salesReps" :key="salesRep.id">
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
                           <span :style="{ paddingLeft: `${getIndentationLevel(salesRep)}rem` }">
-                            <span v-if="salesRep.parent">• </span>{{ salesRep.sales_rep_name }}
+                            <span v-if="salesRep.parent">• </span>{{ salesRep.code }}
                           </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ salesRep.active ? 'Yes' : 'No' }}</td>
@@ -68,7 +81,7 @@
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem @click="() => editSalesRep(salesRep)">Edit</DropdownMenuItem>
-                              <DropdownMenuItem @click="() => deleteSalesRep(salesRep.id)">Delete</DropdownMenuItem>
+                              <DropdownMenuItem @click="() => deleteSalesRep(salesRep.id?.toString() || '')">Delete</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
@@ -101,6 +114,8 @@ import { ref, onMounted, defineComponent, h, VNode } from 'vue';
 import axios from 'axios';
 import type { Ref } from 'vue';
 import { useAppearance } from '@/composables/useAppearance';
+import Input from '@/components/ui/input/Input.vue';
+import Button from '@/components/ui/button/Button.vue';
 
 const { toast } = useToast()
 
@@ -112,11 +127,13 @@ const breadcrumbs = [
 ];
 
 interface SalesRep {
-  id: string;
-  sales_rep_name: string;
-  active: boolean;
-  approved: boolean;
-  parent?: string;
+  id?: number;
+  name?: string;
+  code?: string;
+  password?: string;
+  active?: boolean;
+  approved?: boolean;
+  parent?: number | null;
   childSalesReps?: SalesRep[];
   creator?: { name: string };
   updater?: { name: string };
@@ -126,7 +143,10 @@ interface SalesRep {
 const salesReps: Ref<SalesRep[]> = ref([]);
 const form: Ref<Partial<SalesRep>> = ref({
   id: undefined,
-  sales_rep_name: '',
+  name: '',
+  code: '',
+  email: '',
+  password: '',
   active: true,
   approved: true,
   parent: undefined,
@@ -134,6 +154,8 @@ const form: Ref<Partial<SalesRep>> = ref({
 const isEditing = ref(false);
 
 const { appearance, updateAppearance } = useAppearance();
+
+const showPassword = ref(false);
 
 const fetchActiveApprovedSalesReps = async () => {
   try {
@@ -147,7 +169,7 @@ const fetchActiveApprovedSalesReps = async () => {
 
 const sortSalesRepsHierarchically = (salesReps: SalesRep[]): SalesRep[] => {
   const salesRepMap = new Map<string, SalesRep>();
-  salesReps.forEach(salesRep => salesRepMap.set(salesRep.id, salesRep));
+  salesReps.forEach(salesRep => salesRepMap.set(salesRep.id?.toString() || '', salesRep));
 
   const sortedSalesReps: SalesRep[] = [];
 
@@ -204,19 +226,24 @@ const createSalesRep = async () => {
     toast({
       title: 'Error',
       description: error.response?.data?.message || 'Failed to create sales representative.',
-      variant: 'destructive',
+      variant: 'destructive', 
     });
   }
 };
 
 const editSalesRep = (salesRep: SalesRep) => {
-  form.value = { ...salesRep };
+  form.value = { ...salesRep, name : salesRep.user.name, email : salesRep.user.email };
   isEditing.value = true;
 };
 
 const updateSalesRep = async () => {
   try {
-    await axios.put(`/api/sales-reps/${form.value.id}`, form.value);
+    if (form.value.id !== undefined) {
+      await axios.put(`/api/sales-reps/${form.value.id.toString()}`, {
+        ...form.value,
+        parent: form.value.parent !== null && form.value.parent !== undefined ? form.value.parent.toString() : null,
+      });
+    }
     fetchSalesReps();
     resetForm();
     toast({
@@ -254,8 +281,21 @@ const deleteSalesRep = async (id: string) => {
 };
 
 const resetForm = () => {
-  form.value = { id: undefined, sales_rep_name: '', active: true, approved: true, parent: undefined };
+  form.value = { id: undefined, code: '', active: true, approved: true, parent: undefined };
   isEditing.value = false;
+};
+
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value;
+};
+
+const generateStrongPassword = () => {
+  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
+  let password = "";
+  for (let i = 0, n = charset.length; i < 12; ++i) {
+    password += charset.charAt(Math.floor(Math.random() * n));
+  }
+  form.value.password = password;
 };
 
 onMounted(() => {
@@ -275,5 +315,10 @@ const getIndentationLevel = (salesRep: SalesRep): number => {
 </script>
 
 <style scoped>
-/* Add your styles here */
+.relative {
+  position: relative;
+}
+.absolute {
+  position: absolute;
+}
 </style> 

@@ -22,6 +22,14 @@ class LocationValidator
             'parent' => 'nullable|exists:locations,id',
         ];
 
-        return Validator::make($data, $rules);
+        $validator = Validator::make($data, $rules);
+
+        if ($validator->fails()) {
+            $errors = $validator->errors()->all();
+            $errorMessage = implode(' ', $errors);
+            throw new \Exception($errorMessage);
+        }
+
+        return $validator;
     }
 } 

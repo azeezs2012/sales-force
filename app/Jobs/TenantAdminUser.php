@@ -33,6 +33,7 @@ class TenantAdminUser implements ShouldQueue
             'email' => 'admin@salesforce.com',
             'password' => bcrypt('password'), // Use a secure password
             'is_admin' => true,
+            'role' => 'super_admin',
         ]);
     }
 }

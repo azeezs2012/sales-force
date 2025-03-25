@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('sales_reps', function (Blueprint $table) {
             $table->id();
-            $table->string('sales_rep_name');
+            $table->string('code');
             $table->boolean('active');
             $table->boolean('approved');
             $table->foreignId('parent')->nullable()->constrained('sales_reps');
@@ -22,6 +22,7 @@ return new class extends Migration {
             $table->foreignId('updated_by')->nullable()->constrained('users');
             $table->foreignId('deleted_by')->nullable()->constrained('users');
             $table->foreignId('approved_by')->nullable()->constrained('users');
+            $table->foreignId('user_id')->constrained('users');
             $table->timestamps();
             $table->softDeletes();
         });

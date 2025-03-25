@@ -16,12 +16,22 @@ class SalesRepValidator
     public static function validate(array $data, $salesRepId = null)
     {
         $rules = [
-            'sales_rep_name' => 'required|unique:sales_reps' . ($salesRepId ? ',sales_rep_name,' . $salesRepId : ''),
+            'name' => 'required|string|max:255',
+            'code' => 'required|unique:sales_reps' . ($salesRepId ? ',code,' . $salesRepId : ''),
+            'email' => 'required|email|unique:users' . ($salesRepId ? ',email,' . $salesRepId : ''),
             'active' => 'required|boolean',
             'approved' => 'required|boolean',
             'parent' => 'nullable|exists:sales_reps,id',
         ];
 
-        return Validator::make($data, $rules);
+        $validator = Validator::make($data, $rules);
+
+        if ($validator->fails()) {
+            $errors = $validator->errors()->all();
+            $errorMessage = implode(' ', $errors);
+            throw new \Exception($errorMessage);
+        }
+
+        return $validator;
     }
 } 

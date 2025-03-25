@@ -17,7 +17,7 @@ class SalesRep extends Model
      * @var array
      */
     protected $fillable = [
-        'sales_rep_name',
+        'code',
         'active',
         'approved',
         'parent',
@@ -33,6 +33,14 @@ class SalesRep extends Model
     public function parentSalesRep()
     {
         return $this->belongsTo(SalesRep::class, 'parent');
+    }
+
+    /**
+     * Get the user associated with the sales representative.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     /**
