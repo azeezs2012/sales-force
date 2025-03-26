@@ -54,6 +54,11 @@ const mainNavItems: NavItem[] = [
         href: '/product-types',
         icon: LayoutGrid,
     },
+    {
+        title: 'Product Categories',
+        href: '/product-categories',
+        icon: LayoutGrid,
+    },
 ];
 
 const footerNavItems: NavItem[] = [

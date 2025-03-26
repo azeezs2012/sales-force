@@ -15,6 +15,7 @@ use App\Http\Controllers\TenantControllers\CustomerTypeController;
 use App\Http\Controllers\TenantControllers\SupplierTypeController;
 use App\Http\Controllers\TenantControllers\PaymentMethodController;
 use App\Http\Controllers\TenantControllers\ProductTypeController;
+use App\Http\Controllers\TenantControllers\ProductCategoryController;
 use Inertia\Inertia;
 /*
 |--------------------------------------------------------------------------
@@ -73,6 +74,10 @@ Route::middleware([
         Route::get('product-types', function () {
             return Inertia::render('tenant/lists/ProductTypes');
         })->name('tenant.list.product-types');
+
+        Route::get('product-categories', function () {
+            return Inertia::render('tenant/lists/ProductCategories');
+        })->name('tenant.list.product-categories');
     });
 
     Route::prefix('api')->group(function () {
@@ -117,5 +122,10 @@ Route::middleware([
         Route::get('/product-types/{id}', [ProductTypeController::class, 'show']);
         Route::put('/product-types/{id}', [ProductTypeController::class, 'update']);
         Route::delete('/product-types/{id}', [ProductTypeController::class, 'destroy']);
+        Route::get('/product-categories', [ProductCategoryController::class, 'index']);
+        Route::post('/product-categories', [ProductCategoryController::class, 'store']);
+        Route::get('/product-categories/{id}', [ProductCategoryController::class, 'show']);
+        Route::put('/product-categories/{id}', [ProductCategoryController::class, 'update']);
+        Route::delete('/product-categories/{id}', [ProductCategoryController::class, 'destroy']);
     });
 });
