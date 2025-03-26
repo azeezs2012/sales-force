@@ -43,21 +43,10 @@ This guide provides a step-by-step process to create a new model with CRUD (Crea
 ### 8. Define Web Routes
 - Add a web route in the `routes/tenant.php` file to render the Vue component using Inertia.
 
+### 9. Define Web Routes for Vue Components
+- Add a web route in the `routes/tenant.php` file to render the Vue component using Inertia.
+- Ensure the route is within the `auth` and `verified` middleware group to restrict access to authenticated users.
+
 ## Example Prompt
 
-"Create a new model called `ProductType` with CRUD functionality. Follow these steps:
-- Define the model with necessary attributes and relationships.
-- Create a migration for the `product_types` table.
-- Implement a controller with CRUD methods.
-- Set up a validator for data validation.
-- Define API routes for CRUD operations.
-- Create a Vue component to manage `ProductType` data.
-- Add a menu item in the sidebar for navigation.
-- Define a web route to render the Vue component."
-
-This guide should help you create similar models with CRUD functionality in the future. Let me know if you need further assistance! 
-
-## Additional Notes
-
-- Ensure to add all necessary attributes, including 'parent', to the `$fillable` array for mass assignment.
-- In the `destroy` method, check for child items before allowing deletion to prevent orphaned records. 
+"Create a new model called `

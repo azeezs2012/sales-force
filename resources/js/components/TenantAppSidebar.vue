@@ -39,6 +39,11 @@ const mainNavItems: NavItem[] = [
         href: '/customer-types',
         icon: LayoutGrid,
     },
+    {
+        title: 'Supplier Types',
+        href: '/supplier-types',
+        icon: LayoutGrid,
+    },
 ];
 
 const footerNavItems: NavItem[] = [

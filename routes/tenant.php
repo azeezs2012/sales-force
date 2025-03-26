@@ -12,6 +12,7 @@ use App\Http\Controllers\TenantControllers\BranchController;
 use App\Http\Controllers\TenantControllers\SalesRepController;
 use App\Http\Controllers\TenantControllers\LocationController;
 use App\Http\Controllers\TenantControllers\CustomerTypeController;
+use App\Http\Controllers\TenantControllers\SupplierTypeController;
 use Inertia\Inertia;
 /*
 |--------------------------------------------------------------------------
@@ -58,6 +59,10 @@ Route::middleware([
         Route::get('customer-types', function () {
             return Inertia::render('tenant/lists/CustomerTypes');
         })->name('tenant.list.customer-types');
+
+        Route::get('supplier-types', function () {
+            return Inertia::render('tenant/lists/SupplierTypes');
+        })->name('tenant.list.supplier-types');
     });
 
     Route::prefix('api')->group(function () {
@@ -87,5 +92,10 @@ Route::middleware([
         Route::get('/customer-types/{id}', [CustomerTypeController::class, 'show']);
         Route::put('/customer-types/{id}', [CustomerTypeController::class, 'update']);
         Route::delete('/customer-types/{id}', [CustomerTypeController::class, 'destroy']);
+        Route::get('/supplier-types', [SupplierTypeController::class, 'index']);
+        Route::post('/supplier-types', [SupplierTypeController::class, 'store']);
+        Route::get('/supplier-types/{id}', [SupplierTypeController::class, 'show']);
+        Route::put('/supplier-types/{id}', [SupplierTypeController::class, 'update']);
+        Route::delete('/supplier-types/{id}', [SupplierTypeController::class, 'destroy']);
     });
 });
