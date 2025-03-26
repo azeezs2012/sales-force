@@ -143,10 +143,10 @@ class SalesRepController extends Controller
 
             $user = $salesRep->user;
 
-            $salesRep->forceDelete();
+            $salesRep->delete();
 
             if ($user) {
-                $user->forceDelete(); // Force delete the user to avoid foreign key issues
+                $user->delete(); // Force delete the user to avoid foreign key issues
             }
             
         });
