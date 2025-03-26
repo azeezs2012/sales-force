@@ -13,6 +13,7 @@ use App\Http\Controllers\TenantControllers\SalesRepController;
 use App\Http\Controllers\TenantControllers\LocationController;
 use App\Http\Controllers\TenantControllers\CustomerTypeController;
 use App\Http\Controllers\TenantControllers\SupplierTypeController;
+use App\Http\Controllers\TenantControllers\PaymentMethodController;
 use Inertia\Inertia;
 /*
 |--------------------------------------------------------------------------
@@ -63,6 +64,10 @@ Route::middleware([
         Route::get('supplier-types', function () {
             return Inertia::render('tenant/lists/SupplierTypes');
         })->name('tenant.list.supplier-types');
+
+        Route::get('payment-methods', function () {
+            return Inertia::render('tenant/lists/PaymentMethods');
+        })->name('tenant.list.payment-methods');
     });
 
     Route::prefix('api')->group(function () {
@@ -97,5 +102,10 @@ Route::middleware([
         Route::get('/supplier-types/{id}', [SupplierTypeController::class, 'show']);
         Route::put('/supplier-types/{id}', [SupplierTypeController::class, 'update']);
         Route::delete('/supplier-types/{id}', [SupplierTypeController::class, 'destroy']);
+        Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
+        Route::post('/payment-methods', [PaymentMethodController::class, 'store']);
+        Route::get('/payment-methods/{id}', [PaymentMethodController::class, 'show']);
+        Route::put('/payment-methods/{id}', [PaymentMethodController::class, 'update']);
+        Route::delete('/payment-methods/{id}', [PaymentMethodController::class, 'destroy']);
     });
 });

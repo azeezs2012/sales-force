@@ -44,6 +44,11 @@ const mainNavItems: NavItem[] = [
         href: '/supplier-types',
         icon: LayoutGrid,
     },
+    {
+        title: 'Payment Methods',
+        href: '/payment-methods',
+        icon: LayoutGrid,
+    },
 ];
 
 const footerNavItems: NavItem[] = [
