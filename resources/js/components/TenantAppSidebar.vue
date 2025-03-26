@@ -34,6 +34,11 @@ const mainNavItems: NavItem[] = [
         href: '/locations',
         icon: LayoutGrid,
     },
+    {
+        title: 'Customer Types',
+        href: '/customer-types',
+        icon: LayoutGrid,
+    },
 ];
 
 const footerNavItems: NavItem[] = [

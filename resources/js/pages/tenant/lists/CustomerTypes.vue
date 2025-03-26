@@ -1,5 +1,5 @@
 <template>
-  <Head title="Locations" />
+  <Head title="Customer Types" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
     <div :class="{'dark': appearance === 'dark'}" class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 bg-white dark:bg-neutral-800">
@@ -8,25 +8,25 @@
           <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-neutral-700 overflow-hidden shadow-sm sm:rounded-lg">
               <div class="p-6 text-gray-900 dark:text-neutral-100">
-                <h2 class="text-2xl font-bold mb-4">Location Management</h2>
+                <h2 class="text-2xl font-bold mb-4">Customer Type Management</h2>
 
-                <!-- Form to create or update a location -->
+                <!-- Form to create or update a customer type -->
                 <form @submit.prevent="handleSubmit" class="mb-6">
                   <div class="flex items-center gap-4">
-                    <input type="text" v-model="form.location_name" placeholder="Location Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
+                    <input type="text" v-model="form.type_name" placeholder="Type Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
                     <input type="checkbox" v-model="form.active" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Active
                     <input type="checkbox" v-model="form.approved" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Approved
                     <DropdownMenu>
                       <DropdownMenuTrigger class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
-                        {{ form.parent ? locations.find(location => location.id === form.parent)?.location_name : 'Select Parent Location' }}
+                        {{ form.parent ? customerTypes.find(type => type.id === form.parent)?.type_name : 'Select Parent Type' }}
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuItem v-for="location in locations" :key="location.id" @click="form.parent = location.id">
-                          {{ ' '.repeat(getIndentationLevel(location) * 2) + location.location_name }}
+                        <DropdownMenuItem v-for="type in customerTypes" :key="type.id" @click="form.parent = type.id">
+                          {{ type.type_name }}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    <button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} Location</button>
+                    <button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} Customer Type</button>
                   </div>
                 </form>
 
@@ -34,7 +34,7 @@
                   <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead class="bg-gray-50 dark:bg-neutral-800">
                       <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Location Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Type Name</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Active</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved By</th>
@@ -44,22 +44,22 @@
                       </tr>
                     </thead>
                     <tbody class="bg-white dark:bg-neutral-700 divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr v-for="location in locations" :key="location.id">
+                      <tr v-for="customerType in customerTypes" :key="customerType.id">
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          <span :style="{ paddingLeft: `${getIndentationLevel(location)}rem` }">
-                            <span v-if="location.parent">• </span>{{ location.location_name }}
+                          <span :style="{ paddingLeft: `${getIndentationLevel(customerType)}rem` }">
+                            <span v-if="customerType.parent">• </span>{{ customerType.type_name }}
                           </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ location.active ? 'Yes' : 'No' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ location.approved ? 'Yes' : 'No' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ customerType.active ? 'Yes' : 'No' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ customerType.approved ? 'Yes' : 'No' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ location.approver ? location.approver.name : 'N/A' }}
+                          {{ customerType.approver ? customerType.approver.name : 'N/A' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ location.creator ? location.creator.name : 'N/A' }}
+                          {{ customerType.creator ? customerType.creator.name : 'N/A' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ location.updater ? location.updater.name : 'N/A' }}
+                          {{ customerType.updater ? customerType.updater.name : 'N/A' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                           <DropdownMenu>
@@ -67,8 +67,8 @@
                             <DropdownMenuContent>
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem @click="() => editLocation(location)">Edit</DropdownMenuItem>
-                              <DropdownMenuItem @click="() => deleteLocation(location.id)">Delete</DropdownMenuItem>
+                              <DropdownMenuItem @click="() => editCustomerType(customerType)">Edit</DropdownMenuItem>
+                              <DropdownMenuItem @click="() => deleteCustomerType(customerType.id)">Delete</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
@@ -106,27 +106,26 @@ const { toast } = useToast()
 
 const breadcrumbs = [
   {
-    title: 'Locations',
-    href: '/locations',
+    title: 'Customer Types',
+    href: '/customer-types',
   },
 ];
 
-interface Location {
+interface CustomerType {
   id: string;
-  location_name: string;
+  type_name: string;
   active: boolean;
   approved: boolean;
-  parent?: string;
-  childLocations?: Location[];
   creator?: { name: string };
   updater?: { name: string };
   approver?: { name: string };
+  parent?: string;
 }
 
-const locations: Ref<Location[]> = ref([]);
-const form: Ref<Partial<Location>> = ref({
+const customerTypes: Ref<CustomerType[]> = ref([]);
+const form: Ref<Partial<CustomerType>> = ref({
   id: undefined,
-  location_name: '',
+  type_name: '',
   active: true,
   approved: true,
   parent: undefined,
@@ -135,46 +134,32 @@ const isEditing = ref(false);
 
 const { appearance, updateAppearance } = useAppearance();
 
-const fetchActiveApprovedLocations = async () => {
-  try {
-    const response = await axios.get('/api/locations');
-    const allLocations = sortLocationsHierarchically(response.data);
-    locations.value = allLocations.filter((location: Location) => location.active && location.approved);
-  } catch (error) {
-    toast({
-      title: 'Error',
-      description: 'Failed to fetch active and approved locations.',
-      variant: 'destructive',
-    });
-  }
-};
+const sortCustomerTypesHierarchically = (types: CustomerType[]): CustomerType[] => {
+  const typeMap = new Map<string, CustomerType>();
+  types.forEach(type => typeMap.set(type.id, type));
 
-const sortLocationsHierarchically = (locations: Location[]): Location[] => {
-  const locationMap = new Map<string, Location>();
-  locations.forEach(location => locationMap.set(location.id, location));
+  const sortedTypes: CustomerType[] = [];
 
-  const sortedLocations: Location[] = [];
-
-  const addLocationWithChildren = (location: Location) => {
-    sortedLocations.push(location);
-    const children = locations.filter(l => l.parent === location.id);
-    children.forEach(addLocationWithChildren);
+  const addTypeWithChildren = (type: CustomerType) => {
+    sortedTypes.push(type);
+    const children = types.filter(t => t.parent === type.id);
+    children.forEach(addTypeWithChildren);
   };
 
-  locations.filter(location => !location.parent).forEach(addLocationWithChildren);
+  types.filter(type => !type.parent).forEach(addTypeWithChildren);
 
-  return sortedLocations;
+  return sortedTypes;
 };
 
-const fetchLocations = async () => {
+const fetchCustomerTypes = async () => {
   try {
-    const response = await axios.get('/api/locations');
-    const allLocations = response.data;
-    locations.value = sortLocationsHierarchically(allLocations);
+    const response = await axios.get('/api/customer-types');
+    const allTypes = response.data;
+    customerTypes.value = sortCustomerTypesHierarchically(allTypes);
   } catch (error) {
     toast({
       title: 'Error',
-      description: 'Failed to fetch locations.',
+      description: 'Failed to fetch customer types.',
       variant: 'destructive',
     });
   }
@@ -183,9 +168,9 @@ const fetchLocations = async () => {
 const handleSubmit = async () => {
   try {
     if (isEditing.value) {
-      await updateLocation();
+      await updateCustomerType();
     } else {
-      await createLocation();
+      await createCustomerType();
     }
   } catch (err) {
     const error = err as any;
@@ -197,89 +182,88 @@ const handleSubmit = async () => {
   }
 };
 
-const createLocation = async () => {
+const createCustomerType = async () => {
   try {
-    await axios.post('/api/locations', form.value);
-    fetchLocations();
+    await axios.post('/api/customer-types', form.value);
+    fetchCustomerTypes();
     resetForm();
     toast({
       title: 'Success',
-      description: 'Location created successfully!',
+      description: 'Customer type created successfully!',
       variant: 'default',
     });
   } catch (err) {
     const error = err as any;
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to create location.',
+      description: error.response?.data?.message || 'Failed to create customer type.',
       variant: 'destructive',
     });
   }
 };
 
-const editLocation = (location: Location) => {
-  form.value = { ...location };
+const editCustomerType = (customerType: CustomerType) => {
+  form.value = { ...customerType };
   isEditing.value = true;
 };
 
-const updateLocation = async () => {
+const updateCustomerType = async () => {
   try {
-    await axios.put(`/api/locations/${form.value.id}`, form.value);
-    fetchLocations();
+    await axios.put(`/api/customer-types/${form.value.id}`, form.value);
+    fetchCustomerTypes();
     resetForm();
     toast({
       title: 'Success',
-      description: 'Location updated successfully!',
+      description: 'Customer type updated successfully!',
       variant: 'default',
     });
   } catch (err) {
     const error = err as any;
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to update location.',
+      description: error.response?.data?.message || 'Failed to update customer type.',
       variant: 'destructive',
     });
   }
 };
 
-const deleteLocation = async (id: string) => {
+const deleteCustomerType = async (id: string) => {
   try {
-    await axios.delete(`/api/locations/${id}`);
-    fetchLocations();
+    await axios.delete(`/api/customer-types/${id}`);
+    fetchCustomerTypes();
     toast({
       title: 'Success',
-      description: 'Location deleted successfully!',
+      description: 'Customer type deleted successfully!',
       variant: 'default',
     });
   } catch (err) {
     const error = err as any;
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to delete location.',
+      description: error.response?.data?.message || 'Failed to delete customer type.',
       variant: 'destructive',
     });
   }
 };
 
 const resetForm = () => {
-  form.value = { id: undefined, location_name: '', active: true, approved: true, parent: undefined };
+  form.value = { id: undefined, type_name: '', active: true, approved: true, parent: undefined };
   isEditing.value = false;
 };
 
-onMounted(() => {
-  fetchLocations();
-});
-
-// Function to calculate indentation level based on hierarchy
-const getIndentationLevel = (location: Location): number => {
+const getIndentationLevel = (customerType: CustomerType): number => {
   let level = 0;
-  let currentLocation = location;
-  while (currentLocation.parent) {
+  let currentType = customerType;
+  while (currentType.parent) {
     level++;
-    currentLocation = locations.value.find(l => l.id === currentLocation.parent) || currentLocation;
+    currentType = customerTypes.value.find(t => t.id === currentType.parent) || currentType;
   }
   return level * 1.5; // Adjust multiplier for desired indentation
 };
+
+onMounted(() => {
+  fetchCustomerTypes();
+});
 </script>
 
 <style scoped>
