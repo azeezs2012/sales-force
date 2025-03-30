@@ -7,12 +7,13 @@ This guide provides a step-by-step process to create a new model with CRUD (Crea
 ### 1. Define the Model
 - Create a new model file in the `app/Models/TenantModels` directory.
 - Use the `HasFactory` and `SoftDeletes` traits if needed.
-- Define the `$fillable` array with the attributes that are mass assignable, including 'approved' if applicable.
+- Define the `$fillable` array with the attributes that are mass assignable, including 'approved', 'active', 'approved_by', 'created_by', 'updated_by', and 'deleted_by'.
 - Define relationships with other models if necessary, including parent-child relationships if applicable, and approver relationships.
 
 ### 2. Create the Migration
 - Create a new migration file in the `database/migrations/tenant` directory.
 - Define the table structure using the `Schema::create` method, including a `parent` column if needed, and an `approved` column with a foreign key for `approved_by` if applicable.
+- Add default columns: `active`, `approved`, `approved_by`, `created_by`, `updated_by`, and `deleted_by` with appropriate foreign key constraints referencing the `users` table.
 
 ### 3. Create the Controller
 - Create a new controller in the `app/Http/Controllers/TenantControllers` directory.

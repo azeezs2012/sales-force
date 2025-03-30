@@ -16,6 +16,7 @@ use App\Http\Controllers\TenantControllers\SupplierTypeController;
 use App\Http\Controllers\TenantControllers\PaymentMethodController;
 use App\Http\Controllers\TenantControllers\ProductTypeController;
 use App\Http\Controllers\TenantControllers\ProductCategoryController;
+use App\Http\Controllers\TenantControllers\PaymentTermController;
 use Inertia\Inertia;
 /*
 |--------------------------------------------------------------------------
@@ -78,6 +79,10 @@ Route::middleware([
         Route::get('product-categories', function () {
             return Inertia::render('tenant/lists/ProductCategories');
         })->name('tenant.list.product-categories');
+
+        Route::get('payment-terms', function () {
+            return Inertia::render('tenant/lists/PaymentTerms');
+        })->name('tenant.list.payment-terms');
     });
 
     Route::prefix('api')->group(function () {
@@ -127,5 +132,10 @@ Route::middleware([
         Route::get('/product-categories/{id}', [ProductCategoryController::class, 'show']);
         Route::put('/product-categories/{id}', [ProductCategoryController::class, 'update']);
         Route::delete('/product-categories/{id}', [ProductCategoryController::class, 'destroy']);
+        Route::get('/payment-terms', [PaymentTermController::class, 'index']);
+        Route::post('/payment-terms', [PaymentTermController::class, 'store']);
+        Route::get('/payment-terms/{payment_term}', [PaymentTermController::class, 'show']);
+        Route::put('/payment-terms/{payment_term}', [PaymentTermController::class, 'update']);
+        Route::delete('/payment-terms/{payment_term}', [PaymentTermController::class, 'destroy']);
     });
 });
