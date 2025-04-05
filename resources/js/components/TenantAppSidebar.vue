@@ -69,6 +69,11 @@ const mainNavItems: NavItem[] = [
         href: '/customers',
         icon: LayoutGrid,
     },
+    {
+        title: 'Suppliers',
+        href: '/suppliers',
+        icon: LayoutGrid,
+    },
 ];
 
 const footerNavItems: NavItem[] = [
