@@ -21,6 +21,7 @@
                         {{ form.parent ? locations.find(location => location.id === form.parent)?.location_name : 'Select Parent Location' }}
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
+                        <DropdownMenuItem @click="form.parent = null">None</DropdownMenuItem>
                         <DropdownMenuItem v-for="location in locations" :key="location.id" @click="form.parent = location.id">
                           {{ ' '.repeat(getIndentationLevel(location) * 2) + location.location_name }}
                         </DropdownMenuItem>

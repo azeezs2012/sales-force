@@ -21,6 +21,7 @@
                         {{ form.parent ? supplierTypes.find(type => type.id === form.parent)?.type_name : 'Select Parent Type' }}
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
+                        <DropdownMenuItem @click="form.parent = null">None</DropdownMenuItem>
                         <DropdownMenuItem v-for="type in supplierTypes" :key="type.id" @click="form.parent = type.id">
                           {{ type.type_name }}
                         </DropdownMenuItem>

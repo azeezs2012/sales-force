@@ -21,6 +21,7 @@
                         {{ form.parent ? branches.find(branch => branch.id === form.parent)?.branch_name : 'Select Parent Branch' }}
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
+                        <DropdownMenuItem @click="form.parent = null">None</DropdownMenuItem>
                         <DropdownMenuItem v-for="branch in branches" :key="branch.id" @click="form.parent = branch.id">
                           {{ ' '.repeat(getIndentationLevel(branch) * 2) + branch.branch_name }}
                         </DropdownMenuItem>

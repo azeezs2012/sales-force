@@ -20,6 +20,7 @@
                       <input type="number" v-model="form.credit_limit" placeholder="Credit Limit" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" />
                       <input type="text" v-model="form.phone_no" placeholder="Phone Number" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" />
                       <select v-model="form.parent" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
+                        <option :value="null">None</option>
                         <option v-for="customer in customers" :key="customer.id" :value="customer.id">{{ customer.customer_code }}</option>
                       </select>
                       <input type="checkbox" v-model="form.active" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Active
@@ -44,7 +45,7 @@
                     <div class="flex flex-wrap items-center gap-4 border-b pb-4">
                       <h3 class="text-lg font-semibold w-full">Payment Term</h3>
                       <select v-model="form.default_payment_term" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
-                        <option value="" disabled>Select Payment Term</option>
+                        <option :value="null">None</option>
                         <option v-for="term in paymentTerms" :key="term.id" :value="term.id">{{ term.payment_term_name }}</option>
                       </select>
                     </div>
@@ -53,7 +54,7 @@
                     <div class="flex flex-wrap items-center gap-4 border-b pb-4">
                       <h3 class="text-lg font-semibold w-full">Payment Method</h3>
                       <select v-model="form.default_payment_method" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
-                        <option value="" disabled>Select Payment Method</option>
+                        <option :value="null">None</option>
                         <option v-for="method in paymentMethods" :key="method.id" :value="method.id">{{ method.method_name }}</option>
                       </select>
                     </div>
@@ -62,7 +63,7 @@
                     <div class="flex flex-wrap items-center gap-4 border-b pb-4">
                       <h3 class="text-lg font-semibold w-full">Sales Representative</h3>
                       <select v-model="form.default_sales_rep" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
-                        <option value="" disabled>Select Sales Representative</option>
+                        <option :value="null">None</option>
                         <option v-for="rep in salesReps" :key="rep.id" :value="rep.id">{{ rep.code }}</option>
                       </select>
                     </div>

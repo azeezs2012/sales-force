@@ -33,6 +33,7 @@
                           {{ form.parent ? salesReps.find(salesRep => salesRep.id === form.parent)?.code : 'Select Parent Sales Rep' }}
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
+                          <DropdownMenuItem @click="form.parent = null">None</DropdownMenuItem>
                           <DropdownMenuItem v-for="salesRep in salesReps" :key="salesRep.id" @click="form.parent = salesRep.id">
                             {{ ' '.repeat(getIndentationLevel(salesRep) * 2) + salesRep.code }}
                           </DropdownMenuItem>

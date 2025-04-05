@@ -21,6 +21,7 @@
                         {{ form.parent ? productCategories.find(category => category.id === form.parent)?.category_name : 'Select Parent Category' }}
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
+                        <DropdownMenuItem @click="form.parent = null">None</DropdownMenuItem>
                         <DropdownMenuItem v-for="category in productCategories" :key="category.id" @click="form.parent = category.id">
                           {{ category.category_name }}
                         </DropdownMenuItem>
