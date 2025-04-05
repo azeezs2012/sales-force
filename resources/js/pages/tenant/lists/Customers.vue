@@ -32,7 +32,7 @@
                       <input type="text" v-model="form.name" placeholder="Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100 w-60" required />
                       <input type="email" v-model="form.email" placeholder="Email" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100 w-60" required />
                       <div class="relative w-60">
-                        <Input :type="showPassword ? 'text' : 'password'" v-model="form.password" placeholder="Password" class="pr-10 w-full" required />
+                        <Input :type="showPassword ? 'text' : 'password'" v-model="form.password" placeholder="Password" class="pr-10 w-full" />
                         <Button type="button" @click="togglePasswordVisibility" class="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5">
                           👁️
                         </Button>
@@ -55,6 +55,15 @@
                       <select v-model="form.default_payment_method" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
                         <option value="" disabled>Select Payment Method</option>
                         <option v-for="method in paymentMethods" :key="method.id" :value="method.id">{{ method.method_name }}</option>
+                      </select>
+                    </div>
+
+                    <!-- Sales Rep Details -->
+                    <div class="flex flex-wrap items-center gap-4 border-b pb-4">
+                      <h3 class="text-lg font-semibold w-full">Sales Representative</h3>
+                      <select v-model="form.default_sales_rep" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
+                        <option value="" disabled>Select Sales Representative</option>
+                        <option v-for="rep in salesReps" :key="rep.id" :value="rep.id">{{ rep.code }}</option>
                       </select>
                     </div>
 
@@ -147,6 +156,7 @@ interface Customer {
   approved: boolean;
   default_payment_term?: number | null;
   default_payment_method?: number | null;
+  default_sales_rep?: number | null;
   user?: { name: string; email: string };
   password?: string;
 }
@@ -162,6 +172,7 @@ const form: Ref<Partial<Customer>> = ref({
   approved: false,
   default_payment_term: null,
   default_payment_method: null,
+  default_sales_rep: null,
   name: '',
   email: '',
   password: '',
@@ -174,6 +185,7 @@ const showPassword = ref(false);
 
 const paymentTerms: Ref<any[]> = ref([]);
 const paymentMethods: Ref<any[]> = ref([]);
+const salesReps: Ref<any[]> = ref([]);
 
 const sortCustomersHierarchically = (customers: Customer[]): Customer[] => {
   const customerMap = new Map<string, Customer>();
@@ -239,6 +251,19 @@ const fetchPaymentMethods = async () => {
     toast({
       title: 'Error',
       description: 'Failed to fetch payment methods.',
+      variant: 'destructive',
+    });
+  }
+};
+
+const fetchSalesReps = async () => {
+  try {
+    const response = await axios.get('/api/sales-reps');
+    salesReps.value = response.data;
+  } catch (error) {
+    toast({
+      title: 'Error',
+      description: 'Failed to fetch sales representatives.',
       variant: 'destructive',
     });
   }
@@ -337,6 +362,7 @@ const resetForm = () => {
     approved: false,
     default_payment_term: null,
     default_payment_method: null,
+    default_sales_rep: null,
     name: '',
     email: '',
     password: '',
@@ -361,6 +387,7 @@ onMounted(() => {
   fetchCustomers();
   fetchPaymentTerms();
   fetchPaymentMethods();
+  fetchSalesReps();
 });
 </script>
 

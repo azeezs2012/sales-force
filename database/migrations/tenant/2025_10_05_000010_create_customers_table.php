@@ -19,6 +19,7 @@ return new class extends Migration {
             $table->string('phone_no')->nullable();
             $table->foreignId('default_payment_method')->nullable()->constrained('payment_methods');
             $table->foreignId('default_payment_term')->nullable()->constrained('payment_terms');
+            $table->foreignId('default_sales_rep')->nullable()->constrained('sales_reps');
             $table->boolean('active')->default(true);
             $table->boolean('approved')->default(false);
             $table->foreignId('approved_by')->nullable()->constrained('users');

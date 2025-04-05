@@ -46,7 +46,7 @@ class SalesRepController extends Controller
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email, // Assuming email is provided in the request
-                'password' => bcrypt('defaultpassword'), // Set a default password or generate one
+                'password' => bcrypt($request->password ?? 'password'), // Set a default password or generate one
                 'role' => 'sales_rep',
             ]);
 
@@ -105,6 +105,9 @@ class SalesRepController extends Controller
             $user = $salesRep->user;
             $user->name = $request->name;
             $user->email = $request->email;
+            if ($request->password) {
+                $user->password = bcrypt($request->password);
+            }
             $user->save();
 
             $salesRep->fill($request->all());

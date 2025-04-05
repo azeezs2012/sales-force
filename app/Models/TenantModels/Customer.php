@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\User;
+use App\Models\SalesRep;
 
 class Customer extends Model
 {
@@ -25,6 +26,7 @@ class Customer extends Model
         'approved_by',
         'user_id',
         'parent',
+        'default_sales_rep',
     ];
 
     // Define relationships
@@ -56,5 +58,10 @@ class Customer extends Model
     public function childCustomers()
     {
         return $this->hasMany(Customer::class, 'parent');
+    }
+
+    public function salesRep()
+    {
+        return $this->belongsTo(SalesRep::class, 'default_sales_rep');
     }
 } 

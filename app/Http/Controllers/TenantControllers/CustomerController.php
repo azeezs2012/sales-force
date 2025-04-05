@@ -46,7 +46,7 @@ class CustomerController extends Controller
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email, // Assuming email is provided in the request
-                'password' => bcrypt('defaultpassword'), // Set a default password or generate one
+                'password' => bcrypt($request->password ?? 'password'), // Use request password if provided, otherwise use default
                 'role' => 'customer',
             ]);
 
@@ -56,6 +56,7 @@ class CustomerController extends Controller
             $customer->phone_no = $request->phone_no;
             $customer->default_payment_method = $request->default_payment_method;
             $customer->default_payment_term = $request->default_payment_term;
+            $customer->default_sales_rep = $request->default_sales_rep;
             $customer->active = $request->active;
             $customer->approved = $request->approved;
             $customer->parent = $request->parent;
@@ -109,10 +110,14 @@ class CustomerController extends Controller
             $user = $customer->user;
             $user->name = $request->name;
             $user->email = $request->email;
+            if ($request->password) {
+                $user->password = bcrypt($request->password);
+            }
             $user->save();
 
             $customer->fill($request->all());
             $customer->parent = $request->parent;
+            $customer->default_sales_rep = $request->default_sales_rep;
             $customer->updated_by = auth()->id();
             $customer->updated_at = now();
             if ($customer->approved) {
