@@ -2,143 +2,299 @@
   <Head title="Customers" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div :class="{'dark': appearance === 'dark'}" class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 bg-white dark:bg-neutral-800">
-      <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border md:min-h-min">
-        <div class="absolute top-0 left-0 py-12">
-          <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-neutral-700 overflow-hidden shadow-sm sm:rounded-lg">
-              <div class="p-6 text-gray-900 dark:text-neutral-100">
-                <h2 class="text-2xl font-bold mb-4">Customer Management</h2>
-
-                <!-- Form to create or update a customer -->
-                <form @submit.prevent="handleSubmit" class="mb-6">
-                  <div class="flex flex-col gap-6">
-                    <!-- Customer Details -->
-                    <div class="flex flex-wrap items-center gap-4 border-b pb-4">
-                      <h3 class="text-lg font-semibold w-full">Customer Details</h3>
-                      <input type="text" v-model="form.customer_code" placeholder="Customer Code" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
-                      <input type="number" v-model="form.credit_limit" placeholder="Credit Limit" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" />
-                      <input type="text" v-model="form.phone_no" placeholder="Phone Number" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" />
-                      <select v-model="form.parent" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
-                        <option :value="null">None</option>
-                        <option v-for="customer in customers" :key="customer.id" :value="customer.id">{{ customer.customer_code }}</option>
-                      </select>
-                      <input type="checkbox" v-model="form.active" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Active
-                      <input type="checkbox" v-model="form.approved" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Approved
-                    </div>
-
-                    <!-- User Account Details -->
-                    <div class="flex flex-wrap items-center gap-4 border-b pb-4">
-                      <h3 class="text-lg font-semibold w-full">User Account Details</h3>
-                      <input type="text" v-model="form.name" placeholder="Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100 w-60" required />
-                      <input type="email" v-model="form.email" placeholder="Email" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100 w-60" required />
-                      <div class="relative w-60">
-                        <Input :type="showPassword ? 'text' : 'password'" v-model="form.password" placeholder="Password" class="pr-10 w-full" />
-                        <Button type="button" @click="togglePasswordVisibility" class="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5">
-                          👁️
-                        </Button>
-                      </div>
-                      <Button type="button" @click="generateStrongPassword" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">Generate Password</Button>
-                    </div>
-
-                    <!-- Payment Term Details -->
-                    <div class="flex flex-wrap items-center gap-4 border-b pb-4">
-                      <h3 class="text-lg font-semibold w-full">Payment Term</h3>
-                      <select v-model="form.default_payment_term" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
-                        <option :value="null">None</option>
-                        <option v-for="term in paymentTerms" :key="term.id" :value="term.id">{{ term.payment_term_name }}</option>
-                      </select>
-                    </div>
-
-                    <!-- Payment Method Details -->
-                    <div class="flex flex-wrap items-center gap-4 border-b pb-4">
-                      <h3 class="text-lg font-semibold w-full">Payment Method</h3>
-                      <select v-model="form.default_payment_method" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
-                        <option :value="null">None</option>
-                        <option v-for="method in paymentMethods" :key="method.id" :value="method.id">{{ method.method_name }}</option>
-                      </select>
-                    </div>
-
-                    <!-- Sales Rep Details -->
-                    <div class="flex flex-wrap items-center gap-4 border-b pb-4">
-                      <h3 class="text-lg font-semibold w-full">Sales Representative</h3>
-                      <select v-model="form.default_sales_rep" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
-                        <option :value="null">None</option>
-                        <option v-for="rep in salesReps" :key="rep.id" :value="rep.id">{{ rep.code }}</option>
-                      </select>
-                    </div>
-
-                    <button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} Customer</button>
-                  </div>
-                </form>
-
-                <div class="overflow-x-auto">
-                  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-neutral-800">
-                      <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Customer Code</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Credit Limit</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Phone Number</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Active</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-neutral-700 divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr v-for="customer in customers" :key="customer.id">
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          <span :style="{ paddingLeft: `${getIndentationLevel(customer)}rem` }">
-                            <span v-if="customer.parent">• </span>{{ customer.customer_code }}
-                          </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ customer.credit_limit }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ customer.phone_no }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ customer.active ? 'Yes' : 'No' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ customer.approved ? 'Yes' : 'No' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">Select Action</DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem @click="() => editCustomer(customer)">Edit</DropdownMenuItem>
-                              <DropdownMenuItem @click="() => deleteCustomer(customer.id)">Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+    <Card class="flex h-full flex-1 flex-col bg-muted/10">
+      <CardHeader>
+        <CardTitle class="text-2xl">Customer Management</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <!-- Create/Edit Form -->
+        <div class="mb-6 space-y-6">
+          <!-- Customer Details -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold">Customer Details</h3>
+            <div class="grid grid-cols-4 gap-4">
+              <Input
+                v-model="form.customer_code"
+                placeholder="Customer Code"
+                class="bg-background"
+                required
+              />
+              <Input
+                v-model="form.credit_limit"
+                type="number"
+                placeholder="Credit Limit"
+                class="bg-background"
+              />
+              <Input
+                v-model="form.phone_no"
+                placeholder="Phone Number"
+                class="bg-background"
+              />
+              <Select v-model="form.parent">
+                <SelectTrigger class="bg-background">
+                  <SelectValue placeholder="Select Parent Customer" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem :value="null">None</SelectItem>
+                  <SelectItem
+                    v-for="customer in customers"
+                    :key="customer.id"
+                    :value="customer.id"
+                  >
+                    {{ customer.customer_code }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <div class="flex items-center gap-4">
+                <Label class="flex items-center gap-2">
+                  <Switch v-model="form.active" />
+                  Active
+                </Label>
+                <Label class="flex items-center gap-2">
+                  <Switch v-model="form.approved" />
+                  Approved
+                </Label>
               </div>
             </div>
           </div>
+
+          <!-- User Account Details -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold">User Account Details</h3>
+            <div class="grid grid-cols-4 gap-4">
+              <Input
+                v-model="form.name"
+                placeholder="Name"
+                class="bg-background"
+                required
+              />
+              <Input
+                v-model="form.email"
+                placeholder="Email"
+                type="email"
+                class="bg-background"
+                required
+              />
+              <div class="relative">
+                <Input
+                  :type="showPassword ? 'text' : 'password'"
+                  v-model="form.password"
+                  placeholder="Password"
+                  class="bg-background pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  @click="togglePasswordVisibility"
+                  class="absolute right-2 top-1/2 -translate-y-1/2"
+                >
+                  <Eye v-if="!showPassword" class="h-4 w-4" />
+                  <EyeOff v-else class="h-4 w-4" />
+                </Button>
+              </div>
+              <Button type="button" @click="generateStrongPassword">
+                Generate Password
+              </Button>
+            </div>
+          </div>
+
+          <!-- Payment Term Details -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold">Payment Term</h3>
+            <Select v-model="form.default_payment_term">
+              <SelectTrigger class="bg-background w-[200px]">
+                <SelectValue placeholder="Select Payment Term" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem :value="null">None</SelectItem>
+                <SelectItem
+                  v-for="term in paymentTerms"
+                  :key="term.id"
+                  :value="term.id"
+                >
+                  {{ term.payment_term_name }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <!-- Payment Method Details -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold">Payment Method</h3>
+            <Select v-model="form.default_payment_method">
+              <SelectTrigger class="bg-background w-[200px]">
+                <SelectValue placeholder="Select Payment Method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem :value="null">None</SelectItem>
+                <SelectItem
+                  v-for="method in paymentMethods"
+                  :key="method.id"
+                  :value="method.id"
+                >
+                  {{ method.method_name }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <!-- Sales Rep Details -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold">Sales Representative</h3>
+            <Select v-model="form.default_sales_rep">
+              <SelectTrigger class="bg-background w-[200px]">
+                <SelectValue placeholder="Select Sales Rep" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem :value="null">None</SelectItem>
+                <SelectItem
+                  v-for="rep in salesReps"
+                  :key="rep.id"
+                  :value="rep.id"
+                >
+                  {{ rep.code }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button @click="handleSubmit" class="w-fit">
+            {{ isEditing ? 'Update' : 'Create' }} Customer
+          </Button>
         </div>
-      </div>
-    </div>
+
+        <!-- Customers Table -->
+        <div class="rounded-md border bg-card">
+          <Table>
+            <TableHeader class="bg-muted/50">
+              <TableRow>
+                <TableHead class="uppercase">Customer Code</TableHead>
+                <TableHead class="uppercase">Credit Limit</TableHead>
+                <TableHead class="uppercase">Phone Number</TableHead>
+                <TableHead class="uppercase">Active</TableHead>
+                <TableHead class="uppercase">Approved</TableHead>
+                <TableHead class="w-[100px] uppercase">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="customer in customers" :key="customer.id" class="bg-background/50">
+                <TableCell>
+                  <span :style="{ paddingLeft: `${getIndentationLevel(customer)}rem` }">
+                    <span v-if="customer.parent">• </span>{{ customer.customer_code }}
+                  </span>
+                </TableCell>
+                <TableCell>{{ customer.credit_limit }}</TableCell>
+                <TableCell>{{ customer.phone_no }}</TableCell>
+                <TableCell>
+                  <Badge :variant="customer.active ? 'default' : 'secondary'">
+                    {{ customer.active ? 'Yes' : 'No' }}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge :variant="customer.approved ? 'default' : 'secondary'">
+                    {{ customer.approved ? 'Yes' : 'No' }}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                      <Button variant="secondary" class="w-[130px]">Select Action</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" class="w-[130px]">
+                      <DropdownMenuItem @click="editCustomer(customer)">
+                        <Pencil class="mr-2 h-4 w-4" />
+                        <span>Edit</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem @click="showDeleteDialog(customer)" class="text-destructive focus:text-destructive">
+                        <Trash class="mr-2 h-4 w-4" />
+                        <span>Delete</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+              <TableRow v-if="customers.length === 0">
+                <TableCell colspan="6" class="h-24 text-center">
+                  No customers found.
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+
+    <!-- Delete Confirmation Dialog -->
+    <Dialog :open="!!customerToDelete" @update:open="closeDeleteDialog">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Customer</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete this customer? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" @click="closeDeleteDialog">Cancel</Button>
+          <Button variant="destructive" @click="confirmDelete">Delete</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
+import { ref, onMounted } from 'vue';
+import type { Ref } from 'vue';
+import axios from 'axios';
+import { useToast } from '@/components/ui/toast/use-toast';
+import { Eye, EyeOff, Pencil, Trash } from 'lucide-vue-next';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useToast } from '@/components/ui/toast/use-toast';
-import { ref, onMounted, defineComponent, h, VNode } from 'vue';
-import axios from 'axios';
-import type { Ref } from 'vue';
-import { useAppearance } from '@/composables/useAppearance';
-import Input from '@/components/ui/input/Input.vue';
-import Button from '@/components/ui/button/Button.vue';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-const { toast } = useToast()
+const { toast } = useToast();
 
 const breadcrumbs = [
   {
@@ -163,30 +319,28 @@ interface Customer {
 }
 
 const customers: Ref<Customer[]> = ref([]);
-const form: Ref<Partial<Customer>> = ref({
-  id: undefined,
+const paymentTerms: Ref<any[]> = ref([]);
+const paymentMethods: Ref<any[]> = ref([]);
+const salesReps: Ref<any[]> = ref([]);
+const isEditing = ref(false);
+const showPassword = ref(false);
+const customerToDelete: Ref<Customer | null> = ref(null);
+
+const form = ref({
+  id: undefined as string | undefined,
   customer_code: '',
   credit_limit: 0,
   phone_no: '',
-  parent: null,
+  parent: null as string | null,
   active: true,
   approved: false,
-  default_payment_term: null,
-  default_payment_method: null,
-  default_sales_rep: null,
+  default_payment_term: null as number | null,
+  default_payment_method: null as number | null,
+  default_sales_rep: null as number | null,
   name: '',
   email: '',
   password: '',
 });
-const isEditing = ref(false);
-
-const { appearance, updateAppearance } = useAppearance();
-
-const showPassword = ref(false);
-
-const paymentTerms: Ref<any[]> = ref([]);
-const paymentMethods: Ref<any[]> = ref([]);
-const salesReps: Ref<any[]> = ref([]);
 
 const sortCustomersHierarchically = (customers: Customer[]): Customer[] => {
   const customerMap = new Map<string, Customer>();
@@ -212,20 +366,17 @@ const getIndentationLevel = (customer: Customer): number => {
     level++;
     currentCustomer = customers.value.find(c => c.id === currentCustomer.parent) || currentCustomer;
   }
-  return level * 1.5; // Adjust multiplier for desired indentation
+  return level * 1.5;
 };
 
 const fetchCustomers = async () => {
   try {
     const response = await axios.get('/api/customers');
-    const allCustomers = response.data;
-    customers.value = sortCustomersHierarchically(allCustomers);
-    console.log(customers.value);
-    
-  } catch (error) {
+    customers.value = sortCustomersHierarchically(response.data);
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: 'Failed to fetch customers.',
+      description: error.response?.data?.message || 'Failed to fetch customers',
       variant: 'destructive',
     });
   }
@@ -235,10 +386,10 @@ const fetchPaymentTerms = async () => {
   try {
     const response = await axios.get('/api/payment-terms');
     paymentTerms.value = response.data;
-  } catch (error) {
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: 'Failed to fetch payment terms.',
+      description: error.response?.data?.message || 'Failed to fetch payment terms',
       variant: 'destructive',
     });
   }
@@ -248,10 +399,10 @@ const fetchPaymentMethods = async () => {
   try {
     const response = await axios.get('/api/payment-methods');
     paymentMethods.value = response.data;
-  } catch (error) {
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: 'Failed to fetch payment methods.',
+      description: error.response?.data?.message || 'Failed to fetch payment methods',
       variant: 'destructive',
     });
   }
@@ -261,10 +412,10 @@ const fetchSalesReps = async () => {
   try {
     const response = await axios.get('/api/sales-reps');
     salesReps.value = response.data;
-  } catch (error) {
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: 'Failed to fetch sales representatives.',
+      description: error.response?.data?.message || 'Failed to fetch sales representatives',
       variant: 'destructive',
     });
   }
@@ -273,82 +424,74 @@ const fetchSalesReps = async () => {
 const handleSubmit = async () => {
   try {
     if (isEditing.value) {
-      await updateCustomer();
+      await axios.put(`/api/customers/${form.value.id}`, form.value);
+      toast({
+        title: 'Success',
+        description: 'Customer updated successfully!',
+      });
     } else {
-      await createCustomer();
+      await axios.post('/api/customers', form.value);
+      toast({
+        title: 'Success',
+        description: 'Customer created successfully!',
+      });
     }
-  } catch (err) {
-    const error = err as any;
-    toast({
-      title: 'Error',
-      description: error.response?.data?.message || 'An error occurred.',
-      variant: 'destructive',
-    });
-  }
-};
-
-const createCustomer = async () => {
-  try {
-    await axios.post('/api/customers', form.value);
-    fetchCustomers();
+    await fetchCustomers();
     resetForm();
-    toast({
-      title: 'Success',
-      description: 'Customer created successfully!',
-      variant: 'default',
-    });
-  } catch (err) {
-    const error = err as any;
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to create customer.',
+      description: error.response?.data?.message || 'Operation failed',
       variant: 'destructive',
     });
   }
 };
 
 const editCustomer = (customer: Customer) => {
-  form.value = { ...customer, name: customer.user?.name || '',
-  email: customer.user?.email || '', };
+  form.value = {
+    id: customer.id,
+    customer_code: customer.customer_code,
+    credit_limit: customer.credit_limit,
+    phone_no: customer.phone_no,
+    parent: customer.parent?.toString() || null,
+    active: customer.active,
+    approved: customer.approved,
+    default_payment_term: customer.default_payment_term,
+    default_payment_method: customer.default_payment_method,
+    default_sales_rep: customer.default_sales_rep,
+    name: customer.user?.name || '',
+    email: customer.user?.email || '',
+    password: '',
+  };
   isEditing.value = true;
 };
 
-const updateCustomer = async () => {
-  try {
-    await axios.put(`/api/customers/${form.value.id}`, form.value);
-    fetchCustomers();
-    resetForm();
-    toast({
-      title: 'Success',
-      description: 'Customer updated successfully!',
-      variant: 'default',
-    });
-  } catch (err) {
-    const error = err as any;
-    toast({
-      title: 'Error',
-      description: error.response?.data?.message || 'Failed to update customer.',
-      variant: 'destructive',
-    });
-  }
+const showDeleteDialog = (customer: Customer) => {
+  customerToDelete.value = customer;
 };
 
-const deleteCustomer = async (id: string) => {
+const closeDeleteDialog = () => {
+  customerToDelete.value = null;
+};
+
+const confirmDelete = async () => {
+  if (!customerToDelete.value) return;
+  
   try {
-    await axios.delete(`/api/customers/${id}`);
-    fetchCustomers();
+    await axios.delete(`/api/customers/${customerToDelete.value.id}`);
+    await fetchCustomers();
     toast({
       title: 'Success',
       description: 'Customer deleted successfully!',
-      variant: 'default',
     });
-  } catch (err) {
-    const error = err as any;
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to delete customer.',
+      description: error.response?.data?.message || 'Failed to delete customer',
       variant: 'destructive',
     });
+  } finally {
+    closeDeleteDialog();
   }
 };
 
@@ -376,10 +519,11 @@ const togglePasswordVisibility = () => {
 };
 
 const generateStrongPassword = () => {
-  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=';
+  const length = 12;
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+';
   let password = '';
-  for (let i = 0, n = charset.length; i < 12; ++i) {
-    password += charset.charAt(Math.floor(Math.random() * n));
+  for (let i = 0; i < length; i++) {
+    password += charset.charAt(Math.floor(Math.random() * charset.length));
   }
   form.value.password = password;
 };
