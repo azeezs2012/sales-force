@@ -2,108 +2,177 @@
   <Head title="Branches" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div :class="{'dark': appearance === 'dark'}" class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 bg-white dark:bg-neutral-800">
-      <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border md:min-h-min">
-        <div class="absolute top-0 left-0 py-12">
-          <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-neutral-700 overflow-hidden shadow-sm sm:rounded-lg">
-              <div class="p-6 text-gray-900 dark:text-neutral-100">
-                <h2 class="text-2xl font-bold mb-4">Branch Management</h2>
-
-                <!-- Form to create or update a branch -->
-                <form @submit.prevent="handleSubmit" class="mb-6">
-                  <div class="flex items-center gap-4">
-                    <input type="text" v-model="form.branch_name" placeholder="Branch Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
-                    <input type="checkbox" v-model="form.active" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Active
-                    <input type="checkbox" v-model="form.approved" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Approved
-                    <DropdownMenu>
-                      <DropdownMenuTrigger class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
-                        {{ form.parent ? branches.find(branch => branch.id === form.parent)?.branch_name : 'Select Parent Branch' }}
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem @click="form.parent = null">None</DropdownMenuItem>
-                        <DropdownMenuItem v-for="branch in branches" :key="branch.id" @click="form.parent = branch.id">
-                          {{ ' '.repeat(getIndentationLevel(branch) * 2) + branch.branch_name }}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} Branch</button>
-                  </div>
-                </form>
-
-                <div class="overflow-x-auto">
-                  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-neutral-800">
-                      <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Branch Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Active</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Created By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Updated By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-neutral-700 divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr v-for="branch in branches" :key="branch.id">
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          <span :style="{ paddingLeft: `${getIndentationLevel(branch)}rem` }">
-                            <span v-if="branch.parent">• </span>{{ branch.branch_name }}
-                          </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ branch.active ? 'Yes' : 'No' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ branch.approved ? 'Yes' : 'No' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ branch.approver ? branch.approver.name : 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ branch.creator ? branch.creator.name : null }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ branch.updater ? branch.updater.name : null }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">Select Action</DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem @click="() => editBranch(branch)">Edit</DropdownMenuItem>
-                              <DropdownMenuItem @click="() => deleteBranch(branch.id)">Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+    <Card class="flex h-full flex-1 flex-col bg-muted/10">
+      <CardHeader>
+        <CardTitle class="text-2xl">Branch Management</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <!-- Create/Edit Form -->
+        <div class="mb-6 grid grid-cols-5 gap-4">
+          <Input
+            v-model="form.branch_name"
+            placeholder="Branch Name"
+            class="bg-background"
+          />
+          <div class="flex items-center gap-4">
+            <Label class="flex items-center gap-2">
+              <Switch v-model="form.active" />
+              Active
+            </Label>
+            <Label class="flex items-center gap-2">
+              <Switch v-model="form.approved" />
+              Approved
+            </Label>
           </div>
+          <Select v-model="form.parent">
+            <SelectTrigger class="bg-background">
+              <SelectValue :placeholder="'Select Parent Branch'" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem :value="null">None</SelectItem>
+              <SelectItem v-for="branch in branches" :key="branch.id" :value="branch.id">
+                {{ ' '.repeat(getIndentationLevel(branch) * 2) + branch.branch_name }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Button @click="handleSubmit" class="w-fit whitespace-nowrap">
+            {{ isEditing ? 'Update' : 'Create' }} Branch
+          </Button>
         </div>
-      </div>
-    </div>
+
+        <!-- Branches Table -->
+        <div class="rounded-md border bg-card">
+          <Table>
+            <TableHeader class="bg-muted/50">
+              <TableRow>
+                <TableHead class="uppercase">Branch Name</TableHead>
+                <TableHead class="uppercase">Active</TableHead>
+                <TableHead class="uppercase">Approved</TableHead>
+                <TableHead class="uppercase">Approved By</TableHead>
+                <TableHead class="uppercase">Created By</TableHead>
+                <TableHead class="uppercase">Updated By</TableHead>
+                <TableHead class="w-[100px] uppercase">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="branch in branches" :key="branch.id" class="bg-background/50">
+                <TableCell>
+                  <span :style="{ paddingLeft: `${getIndentationLevel(branch)}rem` }">
+                    <span v-if="branch.parent">• </span>{{ branch.branch_name }}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <Badge :variant="branch.active ? 'default' : 'secondary'">
+                    {{ branch.active ? 'Yes' : 'No' }}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge :variant="branch.approved ? 'default' : 'secondary'">
+                    {{ branch.approved ? 'Yes' : 'No' }}
+                  </Badge>
+                </TableCell>
+                <TableCell>{{ branch.approver ? branch.approver.name : 'N/A' }}</TableCell>
+                <TableCell>{{ branch.creator ? branch.creator.name : 'N/A' }}</TableCell>
+                <TableCell>{{ branch.updater ? branch.updater.name : 'N/A' }}</TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                      <Button variant="secondary" class="w-[130px]">Select Action</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" class="w-[130px]">
+                      <DropdownMenuItem @click="editBranch(branch)">
+                        <Pencil class="mr-2 h-4 w-4" />
+                        <span>Edit</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem @click="showDeleteDialog(branch)" class="text-destructive focus:text-destructive">
+                        <Trash class="mr-2 h-4 w-4" />
+                        <span>Delete</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+              <TableRow v-if="branches.length === 0">
+                <TableCell colspan="7" class="h-24 text-center">
+                  No branches found.
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+
+    <!-- Delete Confirmation Dialog -->
+    <Dialog :open="!!branchToDelete" @update:open="closeDeleteDialog">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Branch</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete this branch? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" @click="closeDeleteDialog">Cancel</Button>
+          <Button variant="destructive" @click="confirmDelete">Delete</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
+import { ref, onMounted } from 'vue';
+import type { Ref } from 'vue';
+import axios from 'axios';
+import { useToast } from '@/components/ui/toast/use-toast';
+import { Pencil, Trash } from 'lucide-vue-next';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useToast } from '@/components/ui/toast/use-toast';
-import { ref, onMounted, defineComponent, h, VNode } from 'vue';
-import axios from 'axios';
-import type { Ref } from 'vue';
-import { useAppearance } from '@/composables/useAppearance';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-const { toast } = useToast()
+const { toast } = useToast();
 
 const breadcrumbs = [
   {
@@ -125,154 +194,136 @@ interface Branch {
 }
 
 const branches: Ref<Branch[]> = ref([]);
-const form: Ref<Partial<Branch>> = ref({
-  id: undefined,
+const isEditing = ref(false);
+const branchToDelete: Ref<Branch | null> = ref(null);
+const form = ref({
+  id: undefined as string | undefined,
   branch_name: '',
   active: true,
   approved: true,
-  parent: undefined,
+  parent: undefined as string | undefined,
 });
-const isEditing = ref(false);
 
-const { appearance, updateAppearance } = useAppearance();
-
-const fetchActiveApprovedBranches = async () => {
-  try {
-    const response = await axios.get('/api/branches');
-    const allBranches = sortBranchesHierarchically(response.data);
-    branches.value = allBranches.filter((branch: Branch) => branch.active && branch.approved);
-  } catch (error) {
-    console.error('Failed to fetch active and approved branches:', error);
+const getIndentationLevel = (branch: Branch): number => {
+  let level = 0;
+  let currentBranch = branch;
+  while (currentBranch.parent) {
+    level++;
+    currentBranch = branches.value.find(b => b.id === currentBranch.parent) as Branch;
   }
-};
-
-const sortBranchesHierarchically = (branches: Branch[]): Branch[] => {
-  const branchMap = new Map<string, Branch>();
-  branches.forEach(branch => branchMap.set(branch.id, branch));
-
-  const sortedBranches: Branch[] = [];
-
-  const addBranchWithChildren = (branch: Branch) => {
-    sortedBranches.push(branch);
-    const children = branches.filter(b => b.parent === branch.id);
-    children.forEach(addBranchWithChildren);
-  };
-
-  branches.filter(branch => !branch.parent).forEach(addBranchWithChildren);
-
-  return sortedBranches;
+  return level;
 };
 
 const fetchBranches = async () => {
   try {
     const response = await axios.get('/api/branches');
-    const allBranches = response.data;
-    branches.value = sortBranchesHierarchically(allBranches);
-  } catch (error) {
-    console.error('Failed to fetch branches:', error);
-  }
-};
-
-const handleSubmit = async () => {
-  try {
-    if (isEditing.value) {
-      await updateBranch();
-    } else {
-      await createBranch();
-    }
-  } catch (err) {
-    const error = err as any;
+    branches.value = sortBranchesHierarchically(response.data);
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'An error occurred.',
+      description: error.response?.data?.message || 'Failed to fetch branches',
       variant: 'destructive',
     });
   }
 };
 
-const createBranch = async () => {
+const sortBranchesHierarchically = (branchList: Branch[]): Branch[] => {
+  const branchMap = new Map<string, Branch>();
+  branchList.forEach(branch => branchMap.set(branch.id, branch));
+
+  const sortedBranches: Branch[] = [];
+
+  const addBranchWithChildren = (branch: Branch) => {
+    sortedBranches.push(branch);
+    const children = branchList.filter(b => b.parent === branch.id);
+    children.forEach(addBranchWithChildren);
+  };
+
+  branchList.filter(branch => !branch.parent).forEach(addBranchWithChildren);
+
+  return sortedBranches;
+};
+
+const handleSubmit = async () => {
   try {
-    await axios.post('/api/branches', form.value);
-    fetchBranches();
+    if (isEditing.value) {
+      await axios.put(`/api/branches/${form.value.id}`, form.value);
+      toast({
+        title: 'Success',
+        description: 'Branch updated successfully!',
+      });
+    } else {
+      await axios.post('/api/branches', form.value);
+      toast({
+        title: 'Success',
+        description: 'Branch created successfully!',
+      });
+    }
+    await fetchBranches();
     resetForm();
-    toast({
-      title: 'Success',
-      description: 'Branch created successfully!',
-      variant: 'default',
-    });
-  } catch (err) {
-    const error = err as any;
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to create branch.',
+      description: error.response?.data?.message || 'Operation failed',
       variant: 'destructive',
     });
   }
 };
 
 const editBranch = (branch: Branch) => {
-  form.value = { ...branch };
+  form.value = {
+    id: branch.id,
+    branch_name: branch.branch_name,
+    active: branch.active,
+    approved: branch.approved,
+    parent: branch.parent,
+  };
   isEditing.value = true;
 };
 
-const updateBranch = async () => {
-  try {
-    await axios.put(`/api/branches/${form.value.id}`, form.value);
-    fetchBranches();
-    resetForm();
-    toast({
-      title: 'Success',
-      description: 'Branch updated successfully!',
-      variant: 'default',
-    });
-  } catch (err) {
-    const error = err as any;
-    toast({
-      title: 'Error',
-      description: error.response?.data?.message || 'Failed to update branch.',
-      variant: 'destructive',
-    });
-  }
+const showDeleteDialog = (branch: Branch) => {
+  branchToDelete.value = branch;
 };
 
-const deleteBranch = async (id: string) => {
+const closeDeleteDialog = () => {
+  branchToDelete.value = null;
+};
+
+const confirmDelete = async () => {
+  if (!branchToDelete.value) return;
+  
   try {
-    await axios.delete(`/api/branches/${id}`);
-    fetchBranches();
+    await axios.delete(`/api/branches/${branchToDelete.value.id}`);
+    await fetchBranches();
     toast({
       title: 'Success',
       description: 'Branch deleted successfully!',
-      variant: 'default',
     });
-  } catch (err) {
-    const error = err as any;
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to delete branch.',
+      description: error.response?.data?.message || 'Failed to delete branch',
       variant: 'destructive',
     });
+  } finally {
+    closeDeleteDialog();
   }
 };
 
 const resetForm = () => {
-  form.value = { id: undefined, branch_name: '', active: true, approved: true, parent: undefined };
+  form.value = {
+    id: undefined,
+    branch_name: '',
+    active: true,
+    approved: true,
+    parent: undefined,
+  };
   isEditing.value = false;
 };
 
 onMounted(() => {
   fetchBranches();
 });
-
-// Function to calculate indentation level based on hierarchy
-const getIndentationLevel = (branch: Branch): number => {
-  let level = 0;
-  let currentBranch = branch;
-  while (currentBranch.parent) {
-    level++;
-    currentBranch = branches.value.find(b => b.id === currentBranch.parent) || currentBranch;
-  }
-  return level * 1.5; // Adjust multiplier for desired indentation
-};
 </script>
 
 <style scoped>
