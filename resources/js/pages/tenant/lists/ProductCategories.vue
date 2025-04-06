@@ -2,108 +2,184 @@
   <Head title="Product Categories" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div :class="{'dark': appearance === 'dark'}" class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 bg-white dark:bg-neutral-800">
-      <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border md:min-h-min">
-        <div class="absolute top-0 left-0 py-12">
-          <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-neutral-700 overflow-hidden shadow-sm sm:rounded-lg">
-              <div class="p-6 text-gray-900 dark:text-neutral-100">
-                <h2 class="text-2xl font-bold mb-4">Product Category Management</h2>
-
-                <!-- Form to create or update a product category -->
-                <form @submit.prevent="handleSubmit" class="mb-6">
-                  <div class="flex items-center gap-4">
-                    <input type="text" v-model="form.category_name" placeholder="Category Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
-                    <input type="checkbox" v-model="form.active" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Active
-                    <input type="checkbox" v-model="form.approved" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Approved
-                    <DropdownMenu>
-                      <DropdownMenuTrigger class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
-                        {{ form.parent ? productCategories.find(category => category.id === form.parent)?.category_name : 'Select Parent Category' }}
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem @click="form.parent = null">None</DropdownMenuItem>
-                        <DropdownMenuItem v-for="category in productCategories" :key="category.id" @click="form.parent = category.id">
-                          {{ category.category_name }}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} Product Category</button>
-                  </div>
-                </form>
-
-                <div class="overflow-x-auto">
-                  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-neutral-800">
-                      <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Category Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Active</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Created By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Updated By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-neutral-700 divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr v-for="productCategory in productCategories" :key="productCategory.id">
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          <span :style="{ paddingLeft: `${getIndentationLevel(productCategory)}rem` }">
-                            <span v-if="productCategory.parent">• </span>{{ productCategory.category_name }}
-                          </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ productCategory.active ? 'Yes' : 'No' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ productCategory.approved ? 'Yes' : 'No' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ productCategory.approver ? productCategory.approver.name : 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ productCategory.creator ? productCategory.creator.name : 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ productCategory.updater ? productCategory.updater.name : 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">Select Action</DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem @click="() => editProductCategory(productCategory)">Edit</DropdownMenuItem>
-                              <DropdownMenuItem @click="() => deleteProductCategory(productCategory.id)">Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+    <Card class="flex h-full flex-1 flex-col bg-muted/10">
+      <CardHeader>
+        <CardTitle class="text-2xl">Product Category Management</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <!-- Create/Edit Form -->
+        <div class="mb-6 space-y-6">
+          <div class="grid grid-cols-4 gap-4">
+            <Input
+              v-model="form.category_name"
+              placeholder="Category Name"
+              class="bg-background"
+              required
+            />
+            <Select v-model="form.parent">
+              <SelectTrigger class="bg-background">
+                <SelectValue placeholder="Select Parent Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem :value="null">None</SelectItem>
+                <SelectItem
+                  v-for="category in productCategories"
+                  :key="category.id"
+                  :value="category.id"
+                >
+                  {{ category.category_name }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <div class="flex items-center gap-4">
+              <Label class="flex items-center gap-2">
+                <Switch v-model="form.active" />
+                Active
+              </Label>
+              <Label class="flex items-center gap-2">
+                <Switch v-model="form.approved" />
+                Approved
+              </Label>
             </div>
+            <Button @click="handleSubmit" class="w-fit">
+              {{ isEditing ? 'Update' : 'Create' }} Product Category
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+
+        <!-- Product Categories Table -->
+        <div class="rounded-md border bg-card">
+          <Table>
+            <TableHeader class="bg-muted/50">
+              <TableRow>
+                <TableHead class="uppercase">Category Name</TableHead>
+                <TableHead class="uppercase">Active</TableHead>
+                <TableHead class="uppercase">Approved</TableHead>
+                <TableHead class="uppercase">Approved By</TableHead>
+                <TableHead class="uppercase">Created By</TableHead>
+                <TableHead class="uppercase">Updated By</TableHead>
+                <TableHead class="w-[100px] uppercase">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="productCategory in productCategories" :key="productCategory.id" class="bg-background/50">
+                <TableCell>
+                  <span :style="{ paddingLeft: `${getIndentationLevel(productCategory)}rem` }">
+                    <span v-if="productCategory.parent">• </span>{{ productCategory.category_name }}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <Badge :variant="productCategory.active ? 'default' : 'secondary'">
+                    {{ productCategory.active ? 'Yes' : 'No' }}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge :variant="productCategory.approved ? 'default' : 'secondary'">
+                    {{ productCategory.approved ? 'Yes' : 'No' }}
+                  </Badge>
+                </TableCell>
+                <TableCell>{{ productCategory.approver ? productCategory.approver.name : 'N/A' }}</TableCell>
+                <TableCell>{{ productCategory.creator ? productCategory.creator.name : 'N/A' }}</TableCell>
+                <TableCell>{{ productCategory.updater ? productCategory.updater.name : 'N/A' }}</TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                      <Button variant="secondary" class="w-[130px]">Select Action</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" class="w-[130px]">
+                      <DropdownMenuItem @click="editProductCategory(productCategory)">
+                        <Pencil class="mr-2 h-4 w-4" />
+                        <span>Edit</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem @click="showDeleteDialog(productCategory)" class="text-destructive focus:text-destructive">
+                        <Trash class="mr-2 h-4 w-4" />
+                        <span>Delete</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+              <TableRow v-if="productCategories.length === 0">
+                <TableCell colspan="7" class="h-24 text-center">
+                  No product categories found.
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+
+    <!-- Delete Confirmation Dialog -->
+    <Dialog :open="!!productCategoryToDelete" @update:open="closeDeleteDialog">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Product Category</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete this product category? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" @click="closeDeleteDialog">Cancel</Button>
+          <Button variant="destructive" @click="confirmDelete">Delete</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
+import { ref, onMounted } from 'vue';
+import type { Ref } from 'vue';
+import axios from 'axios';
+import { useToast } from '@/components/ui/toast/use-toast';
+import { Pencil, Trash } from 'lucide-vue-next';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useToast } from '@/components/ui/toast/use-toast';
-import { ref, onMounted, defineComponent, h, VNode } from 'vue';
-import axios from 'axios';
-import type { Ref } from 'vue';
-import { useAppearance } from '@/composables/useAppearance';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-const { toast } = useToast()
+const { toast } = useToast();
 
 const breadcrumbs = [
   {
@@ -124,16 +200,16 @@ interface ProductCategory {
 }
 
 const productCategories: Ref<ProductCategory[]> = ref([]);
-const form: Ref<Partial<ProductCategory>> = ref({
-  id: undefined,
+const isEditing = ref(false);
+const productCategoryToDelete: Ref<ProductCategory | null> = ref(null);
+
+const form = ref({
+  id: undefined as string | undefined,
   category_name: '',
   active: true,
   approved: false,
-  parent: undefined,
+  parent: null as string | null,
 });
-const isEditing = ref(false);
-
-const { appearance, updateAppearance } = useAppearance();
 
 const sortProductCategoriesHierarchically = (categories: ProductCategory[]): ProductCategory[] => {
   const categoryMap = new Map<string, ProductCategory>();
@@ -152,15 +228,24 @@ const sortProductCategoriesHierarchically = (categories: ProductCategory[]): Pro
   return sortedCategories;
 };
 
+const getIndentationLevel = (productCategory: ProductCategory): number => {
+  let level = 0;
+  let currentCategory = productCategory;
+  while (currentCategory.parent) {
+    level++;
+    currentCategory = productCategories.value.find(c => c.id === currentCategory.parent) || currentCategory;
+  }
+  return level * 1.5;
+};
+
 const fetchProductCategories = async () => {
   try {
     const response = await axios.get('/api/product-categories');
-    const allCategories = response.data;
-    productCategories.value = sortProductCategoriesHierarchically(allCategories);
-  } catch (error) {
+    productCategories.value = sortProductCategoriesHierarchically(response.data);
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: 'Failed to fetch product categories.',
+      description: error.response?.data?.message || 'Failed to fetch product categories',
       variant: 'destructive',
     });
   }
@@ -169,97 +254,78 @@ const fetchProductCategories = async () => {
 const handleSubmit = async () => {
   try {
     if (isEditing.value) {
-      await updateProductCategory();
+      await axios.put(`/api/product-categories/${form.value.id}`, form.value);
+      toast({
+        title: 'Success',
+        description: 'Product category updated successfully!',
+      });
     } else {
-      await createProductCategory();
+      await axios.post('/api/product-categories', form.value);
+      toast({
+        title: 'Success',
+        description: 'Product category created successfully!',
+      });
     }
-  } catch (err) {
-    const error = err as any;
-    toast({
-      title: 'Error',
-      description: error.response?.data?.message || 'An error occurred.',
-      variant: 'destructive',
-    });
-  }
-};
-
-const createProductCategory = async () => {
-  try {
-    await axios.post('/api/product-categories', form.value);
-    fetchProductCategories();
+    await fetchProductCategories();
     resetForm();
-    toast({
-      title: 'Success',
-      description: 'Product category created successfully!',
-      variant: 'default',
-    });
-  } catch (err) {
-    const error = err as any;
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to create product category.',
+      description: error.response?.data?.message || 'Operation failed',
       variant: 'destructive',
     });
   }
 };
 
 const editProductCategory = (productCategory: ProductCategory) => {
-  form.value = { ...productCategory };
+  form.value = {
+    id: productCategory.id,
+    category_name: productCategory.category_name,
+    active: productCategory.active,
+    approved: productCategory.approved,
+    parent: productCategory.parent || null,
+  };
   isEditing.value = true;
 };
 
-const updateProductCategory = async () => {
-  try {
-    await axios.put(`/api/product-categories/${form.value.id}`, form.value);
-    fetchProductCategories();
-    resetForm();
-    toast({
-      title: 'Success',
-      description: 'Product category updated successfully!',
-      variant: 'default',
-    });
-  } catch (err) {
-    const error = err as any;
-    toast({
-      title: 'Error',
-      description: error.response?.data?.message || 'Failed to update product category.',
-      variant: 'destructive',
-    });
-  }
+const showDeleteDialog = (productCategory: ProductCategory) => {
+  productCategoryToDelete.value = productCategory;
 };
 
-const deleteProductCategory = async (id: string) => {
+const closeDeleteDialog = () => {
+  productCategoryToDelete.value = null;
+};
+
+const confirmDelete = async () => {
+  if (!productCategoryToDelete.value) return;
+  
   try {
-    await axios.delete(`/api/product-categories/${id}`);
-    fetchProductCategories();
+    await axios.delete(`/api/product-categories/${productCategoryToDelete.value.id}`);
+    await fetchProductCategories();
     toast({
       title: 'Success',
       description: 'Product category deleted successfully!',
-      variant: 'default',
     });
-  } catch (err) {
-    const error = err as any;
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to delete product category.',
+      description: error.response?.data?.message || 'Failed to delete product category',
       variant: 'destructive',
     });
+  } finally {
+    closeDeleteDialog();
   }
 };
 
 const resetForm = () => {
-  form.value = { id: undefined, category_name: '', active: true, approved: false, parent: undefined };
+  form.value = {
+    id: undefined,
+    category_name: '',
+    active: true,
+    approved: false,
+    parent: null,
+  };
   isEditing.value = false;
-};
-
-const getIndentationLevel = (productCategory: ProductCategory): number => {
-  let level = 0;
-  let currentCategory = productCategory;
-  while (currentCategory.parent) {
-    level++;
-    currentCategory = productCategories.value.find(c => c.id === currentCategory.parent) || currentCategory;
-  }
-  return level * 1.5; // Adjust multiplier for desired indentation
 };
 
 onMounted(() => {

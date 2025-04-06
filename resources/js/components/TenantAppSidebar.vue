@@ -2,11 +2,12 @@
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarGroup } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, ChevronDown, Building2, Users, MapPin, ShoppingCart, CreditCard, Package, Boxes, FileText, Truck } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
+import { ref } from 'vue';
 
 const mainNavItems: NavItem[] = [
     {
@@ -17,64 +18,97 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Users',
         href: '/users',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Branches',
-        href: '/branches',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Sales Reps',
-        href: '/sales-reps',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Locations',
-        href: '/locations',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Customer Types',
-        href: '/customer-types',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Supplier Types',
-        href: '/supplier-types',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Payment Methods',
-        href: '/payment-methods',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Product Types',
-        href: '/product-types',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Product Categories',
-        href: '/product-categories',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Payment Terms',
-        href: '/payment-terms',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Customers',
-        href: '/customers',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Suppliers',
-        href: '/suppliers',
-        icon: LayoutGrid,
+        icon: Users,
     },
 ];
+
+const listNavItems = {
+    organization: {
+        title: 'Organization',
+        icon: Building2,
+        items: [
+            {
+                title: 'Branches',
+                href: '/branches',
+                icon: Building2,
+            },
+            {
+                title: 'Sales Reps',
+                href: '/sales-reps',
+                icon: Users,
+            },
+            {
+                title: 'Locations',
+                href: '/locations',
+                icon: MapPin,
+            },
+        ],
+    },
+    customers: {
+        title: 'Customers',
+        icon: Users,
+        items: [
+            {
+                title: 'Customer Types',
+                href: '/customer-types',
+                icon: Users,
+            },
+            {
+                title: 'Customers',
+                href: '/customers',
+                icon: Users,
+            },
+        ],
+    },
+    suppliers: {
+        title: 'Suppliers',
+        icon: Truck,
+        items: [
+            {
+                title: 'Supplier Types',
+                href: '/supplier-types',
+                icon: Truck,
+            },
+            {
+                title: 'Suppliers',
+                href: '/suppliers',
+                icon: Truck,
+            },
+        ],
+    },
+    products: {
+        title: 'Products',
+        icon: Package,
+        items: [
+            {
+                title: 'Product Types',
+                href: '/product-types',
+                icon: Package,
+            },
+            {
+                title: 'Product Categories',
+                href: '/product-categories',
+                icon: Boxes,
+            },
+        ],
+    },
+    payments: {
+        title: 'Payments',
+        icon: CreditCard,
+        items: [
+            {
+                title: 'Payment Methods',
+                href: '/payment-methods',
+                icon: CreditCard,
+            },
+            {
+                title: 'Payment Terms',
+                href: '/payment-terms',
+                icon: FileText,
+            },
+        ],
+    },
+};
 
 const footerNavItems: NavItem[] = [
     {
@@ -88,6 +122,17 @@ const footerNavItems: NavItem[] = [
         icon: BookOpen,
     },
 ];
+
+const expandedGroups = ref<string[]>([]);
+
+const toggleGroup = (groupKey: string) => {
+    const index = expandedGroups.value.indexOf(groupKey);
+    if (index === -1) {
+        expandedGroups.value.push(groupKey);
+    } else {
+        expandedGroups.value.splice(index, 1);
+    }
+};
 </script>
 
 <template>
@@ -106,6 +151,31 @@ const footerNavItems: NavItem[] = [
 
         <SidebarContent>
             <NavMain :items="mainNavItems" />
+            
+            <SidebarMenu>
+                <template v-for="(group, key) in listNavItems" :key="key">
+                    <SidebarGroup>
+                        <SidebarMenuButton @click="toggleGroup(key)">
+                            <component :is="group.icon" class="h-4 w-4" />
+                            <span>{{ group.title }}</span>
+                            <ChevronDown 
+                                class="h-4 w-4 transition-transform duration-200" 
+                                :class="{ 'rotate-180': expandedGroups.includes(key) }" 
+                            />
+                        </SidebarMenuButton>
+                        <SidebarMenu v-show="expandedGroups.includes(key)">
+                            <SidebarMenuItem v-for="item in group.items" :key="item.href">
+                                <SidebarMenuButton as-child>
+                                    <Link :href="item.href">
+                                        <component :is="item.icon" class="h-4 w-4" />
+                                        <span>{{ item.title }}</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        </SidebarMenu>
+                    </SidebarGroup>
+                </template>
+            </SidebarMenu>
         </SidebarContent>
 
         <SidebarFooter>

@@ -2,108 +2,184 @@
   <Head title="Supplier Types" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div :class="{'dark': appearance === 'dark'}" class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 bg-white dark:bg-neutral-800">
-      <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border md:min-h-min">
-        <div class="absolute top-0 left-0 py-12">
-          <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-neutral-700 overflow-hidden shadow-sm sm:rounded-lg">
-              <div class="p-6 text-gray-900 dark:text-neutral-100">
-                <h2 class="text-2xl font-bold mb-4">Supplier Type Management</h2>
-
-                <!-- Form to create or update a supplier type -->
-                <form @submit.prevent="handleSubmit" class="mb-6">
-                  <div class="flex items-center gap-4">
-                    <input type="text" v-model="form.type_name" placeholder="Type Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
-                    <input type="checkbox" v-model="form.active" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Active
-                    <input type="checkbox" v-model="form.approved" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Approved
-                    <DropdownMenu>
-                      <DropdownMenuTrigger class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
-                        {{ form.parent ? supplierTypes.find(type => type.id === form.parent)?.type_name : 'Select Parent Type' }}
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem @click="form.parent = null">None</DropdownMenuItem>
-                        <DropdownMenuItem v-for="type in supplierTypes" :key="type.id" @click="form.parent = type.id">
-                          {{ type.type_name }}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} Supplier Type</button>
-                  </div>
-                </form>
-
-                <div class="overflow-x-auto">
-                  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-neutral-800">
-                      <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Type Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Active</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Created By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Updated By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-neutral-700 divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr v-for="supplierType in supplierTypes" :key="supplierType.id">
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          <span :style="{ paddingLeft: `${getIndentationLevel(supplierType)}rem` }">
-                            <span v-if="supplierType.parent">• </span>{{ supplierType.type_name }}
-                          </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ supplierType.active ? 'Yes' : 'No' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ supplierType.approved ? 'Yes' : 'No' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ supplierType.approver ? supplierType.approver.name : 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ supplierType.creator ? supplierType.creator.name : 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ supplierType.updater ? supplierType.updater.name : 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">Select Action</DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem @click="() => editSupplierType(supplierType)">Edit</DropdownMenuItem>
-                              <DropdownMenuItem @click="() => deleteSupplierType(supplierType.id)">Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+    <Card class="flex h-full flex-1 flex-col bg-muted/10">
+      <CardHeader>
+        <CardTitle class="text-2xl">Supplier Type Management</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <!-- Create/Edit Form -->
+        <div class="mb-6 space-y-6">
+          <div class="grid grid-cols-4 gap-4">
+            <Input
+              v-model="form.type_name"
+              placeholder="Type Name"
+              class="bg-background"
+              required
+            />
+            <Select v-model="form.parent">
+              <SelectTrigger class="bg-background">
+                <SelectValue placeholder="Select Parent Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem :value="null">None</SelectItem>
+                <SelectItem
+                  v-for="type in supplierTypes"
+                  :key="type.id"
+                  :value="type.id"
+                >
+                  {{ type.type_name }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <div class="flex items-center gap-4">
+              <Label class="flex items-center gap-2">
+                <Switch v-model="form.active" />
+                Active
+              </Label>
+              <Label class="flex items-center gap-2">
+                <Switch v-model="form.approved" />
+                Approved
+              </Label>
             </div>
+            <Button @click="handleSubmit" class="w-fit">
+              {{ isEditing ? 'Update' : 'Create' }} Supplier Type
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+
+        <!-- Supplier Types Table -->
+        <div class="rounded-md border bg-card">
+          <Table>
+            <TableHeader class="bg-muted/50">
+              <TableRow>
+                <TableHead class="uppercase">Type Name</TableHead>
+                <TableHead class="uppercase">Active</TableHead>
+                <TableHead class="uppercase">Approved</TableHead>
+                <TableHead class="uppercase">Approved By</TableHead>
+                <TableHead class="uppercase">Created By</TableHead>
+                <TableHead class="uppercase">Updated By</TableHead>
+                <TableHead class="w-[100px] uppercase">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="supplierType in supplierTypes" :key="supplierType.id" class="bg-background/50">
+                <TableCell>
+                  <span :style="{ paddingLeft: `${getIndentationLevel(supplierType)}rem` }">
+                    <span v-if="supplierType.parent">• </span>{{ supplierType.type_name }}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <Badge :variant="supplierType.active ? 'default' : 'secondary'">
+                    {{ supplierType.active ? 'Yes' : 'No' }}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge :variant="supplierType.approved ? 'default' : 'secondary'">
+                    {{ supplierType.approved ? 'Yes' : 'No' }}
+                  </Badge>
+                </TableCell>
+                <TableCell>{{ supplierType.approver ? supplierType.approver.name : 'N/A' }}</TableCell>
+                <TableCell>{{ supplierType.creator ? supplierType.creator.name : 'N/A' }}</TableCell>
+                <TableCell>{{ supplierType.updater ? supplierType.updater.name : 'N/A' }}</TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                      <Button variant="secondary" class="w-[130px]">Select Action</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" class="w-[130px]">
+                      <DropdownMenuItem @click="editSupplierType(supplierType)">
+                        <Pencil class="mr-2 h-4 w-4" />
+                        <span>Edit</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem @click="showDeleteDialog(supplierType)" class="text-destructive focus:text-destructive">
+                        <Trash class="mr-2 h-4 w-4" />
+                        <span>Delete</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+              <TableRow v-if="supplierTypes.length === 0">
+                <TableCell colspan="7" class="h-24 text-center">
+                  No supplier types found.
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+
+    <!-- Delete Confirmation Dialog -->
+    <Dialog :open="!!supplierTypeToDelete" @update:open="closeDeleteDialog">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Supplier Type</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete this supplier type? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" @click="closeDeleteDialog">Cancel</Button>
+          <Button variant="destructive" @click="confirmDelete">Delete</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
+import { ref, onMounted } from 'vue';
+import type { Ref } from 'vue';
+import axios from 'axios';
+import { useToast } from '@/components/ui/toast/use-toast';
+import { Pencil, Trash } from 'lucide-vue-next';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useToast } from '@/components/ui/toast/use-toast';
-import { ref, onMounted, defineComponent, h, VNode } from 'vue';
-import axios from 'axios';
-import type { Ref } from 'vue';
-import { useAppearance } from '@/composables/useAppearance';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-const { toast } = useToast()
+const { toast } = useToast();
 
 const breadcrumbs = [
   {
@@ -124,29 +200,16 @@ interface SupplierType {
 }
 
 const supplierTypes: Ref<SupplierType[]> = ref([]);
-const form: Ref<Partial<SupplierType>> = ref({
-  id: undefined,
+const isEditing = ref(false);
+const supplierTypeToDelete: Ref<SupplierType | null> = ref(null);
+
+const form = ref({
+  id: undefined as string | undefined,
   type_name: '',
   active: true,
   approved: true,
-  parent: undefined,
+  parent: null as string | null,
 });
-const isEditing = ref(false);
-
-const { appearance, updateAppearance } = useAppearance();
-
-const fetchSupplierTypes = async () => {
-  try {
-    const response = await axios.get('/api/supplier-types');
-    supplierTypes.value = sortSupplierTypesHierarchically(response.data);
-  } catch (error) {
-    toast({
-      title: 'Error',
-      description: 'Failed to fetch supplier types.',
-      variant: 'destructive',
-    });
-  }
-};
 
 const sortSupplierTypesHierarchically = (types: SupplierType[]): SupplierType[] => {
   const typeMap = new Map<string, SupplierType>();
@@ -165,92 +228,6 @@ const sortSupplierTypesHierarchically = (types: SupplierType[]): SupplierType[] 
   return sortedTypes;
 };
 
-const handleSubmit = async () => {
-  try {
-    if (isEditing.value) {
-      await updateSupplierType();
-    } else {
-      await createSupplierType();
-    }
-  } catch (err) {
-    const error = err as any;
-    toast({
-      title: 'Error',
-      description: error.response?.data?.message || 'An error occurred.',
-      variant: 'destructive',
-    });
-  }
-};
-
-const createSupplierType = async () => {
-  try {
-    await axios.post('/api/supplier-types', form.value);
-    fetchSupplierTypes();
-    resetForm();
-    toast({
-      title: 'Success',
-      description: 'Supplier type created successfully!',
-      variant: 'default',
-    });
-  } catch (err) {
-    const error = err as any;
-    toast({
-      title: 'Error',
-      description: error.response?.data?.message || 'Failed to create supplier type.',
-      variant: 'destructive',
-    });
-  }
-};
-
-const editSupplierType = (supplierType: SupplierType) => {
-  form.value = { ...supplierType };
-  isEditing.value = true;
-};
-
-const updateSupplierType = async () => {
-  try {
-    await axios.put(`/api/supplier-types/${form.value.id}`, form.value);
-    fetchSupplierTypes();
-    resetForm();
-    toast({
-      title: 'Success',
-      description: 'Supplier type updated successfully!',
-      variant: 'default',
-    });
-  } catch (err) {
-    const error = err as any;
-    toast({
-      title: 'Error',
-      description: error.response?.data?.message || 'Failed to update supplier type.',
-      variant: 'destructive',
-    });
-  }
-};
-
-const deleteSupplierType = async (id: string) => {
-  try {
-    await axios.delete(`/api/supplier-types/${id}`);
-    fetchSupplierTypes();
-    toast({
-      title: 'Success',
-      description: 'Supplier type deleted successfully!',
-      variant: 'default',
-    });
-  } catch (err) {
-    const error = err as any;
-    toast({
-      title: 'Error',
-      description: error.response?.data?.message || 'Failed to delete supplier type.',
-      variant: 'destructive',
-    });
-  }
-};
-
-const resetForm = () => {
-  form.value = { id: undefined, type_name: '', active: true, approved: true, parent: undefined };
-  isEditing.value = false;
-};
-
 const getIndentationLevel = (supplierType: SupplierType): number => {
   let level = 0;
   let currentType = supplierType;
@@ -258,7 +235,97 @@ const getIndentationLevel = (supplierType: SupplierType): number => {
     level++;
     currentType = supplierTypes.value.find(t => t.id === currentType.parent) || currentType;
   }
-  return level * 1.5; // Adjust multiplier for desired indentation
+  return level * 1.5;
+};
+
+const fetchSupplierTypes = async () => {
+  try {
+    const response = await axios.get('/api/supplier-types');
+    supplierTypes.value = sortSupplierTypesHierarchically(response.data);
+  } catch (error: any) {
+    toast({
+      title: 'Error',
+      description: error.response?.data?.message || 'Failed to fetch supplier types',
+      variant: 'destructive',
+    });
+  }
+};
+
+const handleSubmit = async () => {
+  try {
+    if (isEditing.value) {
+      await axios.put(`/api/supplier-types/${form.value.id}`, form.value);
+      toast({
+        title: 'Success',
+        description: 'Supplier type updated successfully!',
+      });
+    } else {
+      await axios.post('/api/supplier-types', form.value);
+      toast({
+        title: 'Success',
+        description: 'Supplier type created successfully!',
+      });
+    }
+    await fetchSupplierTypes();
+    resetForm();
+  } catch (error: any) {
+    toast({
+      title: 'Error',
+      description: error.response?.data?.message || 'Operation failed',
+      variant: 'destructive',
+    });
+  }
+};
+
+const editSupplierType = (supplierType: SupplierType) => {
+  form.value = {
+    id: supplierType.id,
+    type_name: supplierType.type_name,
+    active: supplierType.active,
+    approved: supplierType.approved,
+    parent: supplierType.parent || null,
+  };
+  isEditing.value = true;
+};
+
+const showDeleteDialog = (supplierType: SupplierType) => {
+  supplierTypeToDelete.value = supplierType;
+};
+
+const closeDeleteDialog = () => {
+  supplierTypeToDelete.value = null;
+};
+
+const confirmDelete = async () => {
+  if (!supplierTypeToDelete.value) return;
+  
+  try {
+    await axios.delete(`/api/supplier-types/${supplierTypeToDelete.value.id}`);
+    await fetchSupplierTypes();
+    toast({
+      title: 'Success',
+      description: 'Supplier type deleted successfully!',
+    });
+  } catch (error: any) {
+    toast({
+      title: 'Error',
+      description: error.response?.data?.message || 'Failed to delete supplier type',
+      variant: 'destructive',
+    });
+  } finally {
+    closeDeleteDialog();
+  }
+};
+
+const resetForm = () => {
+  form.value = {
+    id: undefined,
+    type_name: '',
+    active: true,
+    approved: true,
+    parent: null,
+  };
+  isEditing.value = false;
 };
 
 onMounted(() => {
