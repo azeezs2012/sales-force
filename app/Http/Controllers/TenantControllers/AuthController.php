@@ -41,4 +41,15 @@ class AuthController extends Controller
 
         return response()->json(['token' => $token]);
     }
+
+    public function logout(Request $request)
+    {
+        Auth::guard('web')->logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/');
+    }
+    
 } 
