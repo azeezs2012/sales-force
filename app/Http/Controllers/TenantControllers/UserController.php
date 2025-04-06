@@ -19,9 +19,9 @@ class UserController extends Controller
     // Store a newly created resource in storage.
     public function store(Request $request)
     {
-        $validatedData = UserValidator::validate($request);
+        $validatedData = UserValidator::validate($request->all());
 
-        $user = User::create($validatedData);
+        $user = User::create($request->all());
 
         return response()->json($user, 201);
     }
@@ -43,9 +43,9 @@ class UserController extends Controller
 
         $user = User::findOrFail($id);
 
-        $validatedData = UserValidator::validate($request, $id);
+        $validatedData = UserValidator::validate($request->all(), $id);
 
-        $user->update($validatedData);
+        $user->update($request->all());
 
         return response()->json($user);
     }
