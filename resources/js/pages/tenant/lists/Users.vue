@@ -2,79 +2,138 @@
   <Head title="Users" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div :class="{'dark': appearance === 'dark'}" class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 bg-white dark:bg-neutral-800">
-      <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border md:min-h-min">
-        <div class="absolute top-0 left-0 py-12">
-          <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-neutral-700 overflow-hidden shadow-sm sm:rounded-lg">
-              <div class="p-6 text-gray-900 dark:text-neutral-100">
-                <h2 class="text-2xl font-bold mb-4">User Management</h2>
-
-                <!-- Form to create or update a user -->
-                <form @submit.prevent="handleSubmit" class="mb-6">
-                  <div class="flex items-center gap-4">
-                    <input type="text" v-model="form.name" placeholder="Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
-                    <input type="email" v-model="form.email" placeholder="Email" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
-                    <input type="password" v-model="form.password" placeholder="Password" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
-                    <button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} User</button>
-                  </div>
-                </form>
-
-                <div class="overflow-x-auto">
-                  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-neutral-800">
-                      <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Email</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-neutral-700 divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr v-for="user in users" :key="user.id">
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ user.name }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ user.email }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">Select Action</DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem @click="() => editUser(user)">Edit</DropdownMenuItem>
-                              <DropdownMenuItem @click="() => deleteUser(user.id)">Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
+    <Card class="flex h-full flex-1 flex-col bg-muted/10">
+      <CardHeader>
+        <CardTitle class="text-2xl">User Management</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <!-- Create/Edit Form -->
+        <div class="mb-6 grid grid-cols-4 gap-4">
+          <Input
+            v-model="form.name"
+            placeholder="Name"
+            class="bg-background"
+          />
+          <Input
+            v-model="form.email"
+            type="email"
+            placeholder="Email"
+            class="bg-background"
+          />
+          <Input
+            v-model="form.password"
+            type="password"
+            placeholder="Password"
+            class="bg-background"
+          />
+          <Button @click="handleSubmit" class="w-fit whitespace-nowrap">
+            {{ isEditing ? 'Update' : 'Create' }} User
+          </Button>
         </div>
-      </div>
-    </div>
+
+        <!-- Users Table -->
+        <div class="rounded-md border bg-card">
+          <Table>
+            <TableHeader class="bg-muted/50">
+              <TableRow>
+                <TableHead class="uppercase">Name</TableHead>
+                <TableHead class="uppercase">Email</TableHead>
+                <TableHead class="w-[100px] uppercase">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="user in users" :key="user.id" class="bg-background/50">
+                <TableCell>{{ user.name }}</TableCell>
+                <TableCell>{{ user.email }}</TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                      <Button variant="secondary" class="w-[130px]">Select Action</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" class="w-[130px]">
+                      <DropdownMenuItem @click="editUser(user)">
+                        <Pencil class="mr-2 h-4 w-4" />
+                        <span>Edit</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem @click="showDeleteDialog(user)" class="text-destructive focus:text-destructive">
+                        <Trash class="mr-2 h-4 w-4" />
+                        <span>Delete</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+              <TableRow v-if="users.length === 0">
+                <TableCell colspan="3" class="h-24 text-center">
+                  No users found.
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+
+    <!-- Delete Confirmation Dialog -->
+    <Dialog :open="!!userToDelete" @update:open="closeDeleteDialog">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete User</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete this user? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" @click="closeDeleteDialog">Cancel</Button>
+          <Button variant="destructive" @click="confirmDelete">Delete</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
+import { ref, onMounted } from 'vue';
+import type { Ref } from 'vue';
+import axios from 'axios';
+import { useToast } from '@/components/ui/toast/use-toast';
+import { Pencil, Trash } from 'lucide-vue-next';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useToast } from '@/components/ui/toast/use-toast'
-import { ref, onMounted } from 'vue';
-import axios from 'axios';
-import type { Ref } from 'vue';
-import { useAppearance } from '@/composables/useAppearance';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
-const { toast } = useToast()
+const { toast } = useToast();
 
 const breadcrumbs = [
   {
@@ -90,108 +149,100 @@ interface User {
 }
 
 const users: Ref<User[]> = ref([]);
-const form: Ref<Partial<User> & { password?: string }> = ref({
-  id: undefined,
+const isEditing = ref(false);
+const userToDelete: Ref<User | null> = ref(null);
+const form = ref({
+  id: undefined as string | undefined,
   name: '',
   email: '',
   password: '',
 });
-const isEditing = ref(false);
-
-const { appearance, updateAppearance } = useAppearance();
 
 const fetchUsers = async () => {
   try {
     const response = await axios.get('/api/users');
     users.value = response.data;
-  } catch (error) {
-    console.error('Failed to fetch users:', error);
+  } catch (error: any) {
+    toast({
+      title: 'Error',
+      description: error.response?.data?.message || 'Failed to fetch users',
+      variant: 'destructive',
+    });
   }
 };
 
 const handleSubmit = async () => {
   try {
     if (isEditing.value) {
-      await updateUser();
+      await axios.put(`/api/users/${form.value.id}`, form.value);
+      toast({
+        title: 'Success',
+        description: 'User updated successfully!',
+      });
     } else {
-      await createUser();
+      await axios.post('/api/users', form.value);
+      toast({
+        title: 'Success',
+        description: 'User created successfully!',
+      });
     }
-  } catch (err) {
-    const error = err as any;
-    toast({
-      title: 'Error',
-      description: error.response?.data?.message || 'An error occurred.',
-      variant: 'destructive',
-    });
-  }
-};
-
-const createUser = async () => {
-  try {
-    await axios.post('/api/users', form.value);
-    fetchUsers();
+    await fetchUsers();
     resetForm();
-    toast({
-      title: 'Success',
-      description: 'User created successfully!',
-      variant: 'default',
-    });
-  } catch (err) {
-    const error = err as any;
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to create user.',
+      description: error.response?.data?.message || 'Operation failed',
       variant: 'destructive',
     });
   }
 };
 
 const editUser = (user: User) => {
-  form.value = { ...user };
+  form.value = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    password: '',
+  };
   isEditing.value = true;
 };
 
-const updateUser = async () => {
-  try {
-    await axios.put(`/api/users/${form.value.id}`, form.value);
-    fetchUsers();
-    resetForm();
-    toast({
-      title: 'Success',
-      description: 'User updated successfully!',
-      variant: 'default',
-    });
-  } catch (err) {
-    const error = err as any;
-    toast({
-      title: 'Error',
-      description: error.response?.data?.message || 'Failed to update user.',
-      variant: 'destructive',
-    });
-  }
+const showDeleteDialog = (user: User) => {
+  userToDelete.value = user;
 };
 
-const deleteUser = async (id: string) => {
+const closeDeleteDialog = () => {
+  userToDelete.value = null;
+};
+
+const confirmDelete = async () => {
+  if (!userToDelete.value) return;
+  
   try {
-    await axios.delete(`/api/users/${id}`);
-    fetchUsers();
+    await axios.delete(`/api/users/${userToDelete.value.id}`);
+    await fetchUsers();
     toast({
       title: 'Success',
       description: 'User deleted successfully!',
-      variant: 'default',
     });
-  } catch (err) {
-    const error = err as any;
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: 'Failed to delete user.',
+      description: error.response?.data?.message || 'Failed to delete user',
       variant: 'destructive',
     });
+  } finally {
+    closeDeleteDialog();
   }
 };
 
 const resetForm = () => {
-  form.value = { id: undefined, name: '', email: '', password: '' };
+  form.value = {
+    id: undefined,
+    name: '',
+    email: '',
+    password: '',
+  };
   isEditing.value = false;
 };
 
