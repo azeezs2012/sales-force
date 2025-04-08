@@ -14,6 +14,7 @@ defineProps<Props>();
 
 const logout = () => {
     axios.post('/api/logout').then(() => {
+        localStorage.removeItem('authToken');
         window.location.href = '/';
     });
 };
