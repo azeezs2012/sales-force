@@ -38,6 +38,7 @@
               <TableRow>
                 <TableHead class="uppercase">Name</TableHead>
                 <TableHead class="uppercase">Email</TableHead>
+                <TableHead class="uppercase">Role</TableHead>
                 <TableHead class="w-[100px] uppercase">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -45,6 +46,7 @@
               <TableRow v-for="user in users" :key="user.id" class="bg-background/50">
                 <TableCell>{{ user.name }}</TableCell>
                 <TableCell>{{ user.email }}</TableCell>
+                <TableCell>{{ user.role }}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger as-child>
@@ -146,6 +148,7 @@ interface User {
   id: string;
   name: string;
   email: string;
+  role: string;
 }
 
 const users: Ref<User[]> = ref([]);

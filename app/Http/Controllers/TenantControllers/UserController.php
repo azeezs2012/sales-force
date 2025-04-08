@@ -21,7 +21,11 @@ class UserController extends Controller
     {
         $validatedData = UserValidator::validate($request->all());
 
-        $user = User::create($request->all());
+        $data = $request->all();
+        $data['role'] = 'default';
+        $data['is_admin'] = false;
+
+        $user = User::create($data);
 
         return response()->json($user, 201);
     }
