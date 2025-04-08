@@ -14,12 +14,7 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: '/dashboard',
         icon: LayoutGrid,
-    },
-    {
-        title: 'Users',
-        href: '/users',
-        icon: Users,
-    },
+    }
 ];
 
 const listNavItems = {
@@ -28,14 +23,14 @@ const listNavItems = {
         icon: Building2,
         items: [
             {
+                title: 'Users',
+                href: '/users',
+                icon: Users,
+            },
+            {
                 title: 'Branches',
                 href: '/branches',
                 icon: Building2,
-            },
-            {
-                title: 'Sales Reps',
-                href: '/sales-reps',
-                icon: Users,
             },
             {
                 title: 'Locations',
@@ -51,6 +46,11 @@ const listNavItems = {
             {
                 title: 'Customer Types',
                 href: '/customer-types',
+                icon: Users,
+            },
+            {
+                title: 'Sales Reps',
+                href: '/sales-reps',
                 icon: Users,
             },
             {

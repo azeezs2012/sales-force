@@ -63,6 +63,15 @@ class UserController extends Controller
         }
 
         $user = User::findOrFail($id);
+
+        if ($user->is_admin) {
+            throw new \Exception('The first created user cannot be deleted.');
+        }
+
+        if (in_array($user->role, ['customer', 'sales_rep','supplier'])) {
+            throw new \Exception('The user is associated with a '.$user->role.' and cannot be deleted.');
+        }
+
         $user->delete();
 
         return response()->json(null, 204);

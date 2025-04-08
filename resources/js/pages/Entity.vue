@@ -12,6 +12,24 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import { 
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
 
 defineProps<{
     tenants: {
@@ -93,59 +111,62 @@ const createTenant = async () => {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-            <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border md:min-h-min">
-                <div class="py-12">
-                    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <div class="p-6 text-gray-900">
-                                <h2 class="text-2xl font-bold mb-4">All Entities</h2>
-
-                                <!-- Form to create a new tenant -->
-                                <form @submit.prevent="createTenant" class="mb-6">
-                                    <div class="flex items-center gap-4">
-                                        <input type="text" v-model="newTenantId" placeholder="Enter Tenant ID" class="border rounded p-2" required />
-                                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Create Entity</button>
-                                    </div>
-                                </form>
-
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full divide-y divide-gray-200">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domain</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated At</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="bg-white divide-y divide-gray-200">
-                                            <tr v-for="tenant in tenants" :key="tenant.id">
-                                                <td class="px-6 py-4 whitespace-nowrap">{{ tenant.id }}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap">{{ tenant.domain }}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap">{{ tenant.created_at }}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap">{{ tenant.updated_at }}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger class="bg-blue-500 text-white px-4 py-2 rounded">Select Action</DropdownMenuTrigger>
-                                                        <DropdownMenuContent>
-                                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem @click="() => executeAction({ ...tenant, selectedAction: 'migrate' })">Migrate</DropdownMenuItem>
-                                                            <DropdownMenuItem @click="() => executeAction({ ...tenant, selectedAction: 'flushdb' })">FlushDB</DropdownMenuItem>
-                                                            <DropdownMenuItem @click="() => executeAction({ ...tenant, selectedAction: 'rollback' })">Rollback</DropdownMenuItem>
-                                                            <DropdownMenuItem @click="() => executeAction({ ...tenant, selectedAction: 'delete' })">Delete</DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+            <div class="relative flex-1 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border md:min-h-min">
+                <Card class="border-0 shadow-none">
+                    <CardHeader>
+                        <CardTitle>All Entities</CardTitle>
+                    </CardHeader>
+                    
+                    <CardContent>
+                        <!-- Form to create a new tenant -->
+                        <form @submit.prevent="createTenant" class="mb-6 space-y-4">
+                            <div class="flex items-center gap-4">
+                                <Input 
+                                    v-model="newTenantId" 
+                                    placeholder="Enter Tenant ID" 
+                                    class="max-w-sm" 
+                                    required 
+                                />
+                                <Button type="submit">Create Entity</Button>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        </form>
+
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>ID</TableHead>
+                                    <TableHead>Domain</TableHead>
+                                    <TableHead>Created At</TableHead>
+                                    <TableHead>Updated At</TableHead>
+                                    <TableHead>Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                <TableRow v-for="tenant in tenants" :key="tenant.id">
+                                    <TableCell>{{ tenant.id }}</TableCell>
+                                    <TableCell>{{ tenant.domain }}</TableCell>
+                                    <TableCell>{{ tenant.created_at }}</TableCell>
+                                    <TableCell>{{ tenant.updated_at }}</TableCell>
+                                    <TableCell>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger as-child>
+                                                <Button variant="outline">Select Action</Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem @click="() => executeAction({ ...tenant, selectedAction: 'migrate' })">Migrate</DropdownMenuItem>
+                                                <DropdownMenuItem @click="() => executeAction({ ...tenant, selectedAction: 'flushdb' })">FlushDB</DropdownMenuItem>
+                                                <DropdownMenuItem @click="() => executeAction({ ...tenant, selectedAction: 'rollback' })">Rollback</DropdownMenuItem>
+                                                <DropdownMenuItem @click="() => executeAction({ ...tenant, selectedAction: 'delete' })">Delete</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     </AppLayout>
