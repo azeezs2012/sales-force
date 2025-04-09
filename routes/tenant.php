@@ -19,6 +19,8 @@ use App\Http\Controllers\TenantControllers\ProductCategoryController;
 use App\Http\Controllers\TenantControllers\PaymentTermController;
 use App\Http\Controllers\TenantControllers\CustomerController;
 use App\Http\Controllers\TenantControllers\SupplierController;
+use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\PasswordController;
 use Inertia\Inertia;
 /*
 |--------------------------------------------------------------------------
@@ -93,12 +95,31 @@ Route::middleware([
         Route::get('suppliers', function () {
             return Inertia::render('tenant/lists/Suppliers');
         })->name('tenant.list.suppliers');
+
+        Route::redirect('settings', '/settings/profile');
+
+        Route::get('settings/profile', function () {
+            return Inertia::render('tenant/settings/Profile');
+        })->name('tenant.settings.profile');
+
+        Route::get('settings/password', function () {
+            return Inertia::render('tenant/settings/Password');
+        })->name('tenant.settings.password');
+
+        Route::get('settings/appearance', function () {
+            return Inertia::render('tenant/settings/Appearance');
+        })->name('tenant.settings.appearance');
     });
 
     Route::prefix('api')->group(function () {
         Route::post('/login', [AuthController::class, 'login']);
         
         Route::middleware(['auth', 'verified'])->group(function () {
+            Route::get('settings/profile', [ProfileController::class, 'edit']);
+            Route::patch('settings/profile', [ProfileController::class, 'update']);
+            Route::delete('settings/profile', [ProfileController::class, 'destroy']);
+            Route::get('settings/password', [PasswordController::class, 'edit']);
+            Route::put('settings/password', [PasswordController::class, 'update']);
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::get('/users', [UserController::class, 'index']);
             Route::post('/users', [UserController::class, 'store']);
