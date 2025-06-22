@@ -77,11 +77,11 @@
                         </div>
                         <div class="flex flex-col space-y-1.5 md:col-span-3">
                             <Label>Delivery Address</Label>
-                            <Textarea v-model="form.po_delivery_address" placeholder="Delivery Address" />
+                            <Input v-model="form.po_delivery_address" placeholder="Delivery Address" />
                         </div>
                         <div class="flex flex-col space-y-1.5 md:col-span-3">
                             <Label>Billing Address</Label>
-                            <Textarea v-model="form.po_billing_address" placeholder="Billing Address" />
+                            <Input v-model="form.po_billing_address" placeholder="Billing Address" />
                         </div>
                     </CardContent>
                 </Card>
@@ -172,7 +172,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 
 const { toast } = useToast();
 const breadcrumbs = [{ title: 'Purchase Orders', href: '/purchase-orders' }];
@@ -226,11 +225,15 @@ const initialFormState: PurchaseOrder = {
 const form = ref({ ...initialFormState });
 
 // Computed
-const grandTotal = computed(() => form.value.details.reduce((sum, item) => sum + item.total, 0));
+const grandTotal = computed(() => {
+    return form.value.details.reduce((sum, item) => {
+        return sum + (Number(item.total) || 0);
+    }, 0);
+});
 
 // Methods
 const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
-const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0);
 
 const fetchPOs = async () => {
     try {
@@ -271,7 +274,7 @@ const removeDetail = (index: number) => {
     form.value.details.splice(index, 1);
 };
 const updateTotal = (item: PurchaseOrderDetail) => {
-    item.total = item.quantity * item.cost;
+    item.total = (Number(item.quantity) || 0) * (Number(item.cost) || 0);
 };
 
 const handleSubmit = async () => {
