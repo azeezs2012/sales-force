@@ -76,7 +76,7 @@ class PurchaseOrderController extends Controller
         
         $validatedData = $validator->validated();
 
-        $updatedPurchaseOrder = DB::transaction(function () use ($purchaseOrder, $validatedData, $request) {
+        $updatedPurchaseOrder = DB::transaction(function () use ($purchaseOrder, $validatedData) {
             $totalAmount = collect($validatedData['details'])->sum(function ($detail) {
                 return ($detail['quantity'] * $detail['cost']);
             });
@@ -92,18 +92,30 @@ class PurchaseOrderController extends Controller
                 'updated_by' => auth()->id(),
             ]);
 
-            // Simple sync: delete old details and create new ones
-            $purchaseOrder->details()->delete();
+            $incomingDetailIds = collect($validatedData['details'])->pluck('id')->filter()->all();
+            $detailsToDeleteIds = collect($purchaseOrder->details)->pluck('id')->diff($incomingDetailIds);
 
-            foreach ($validatedData['details'] as $detail) {
-                $purchaseOrder->details()->create([
-                    'product_id' => $detail['product_id'],
-                    'quantity' => $detail['quantity'],
-                    'cost' => $detail['cost'],
-                    'total' => $detail['quantity'] * $detail['cost'],
-                    'location_id' => $detail['location_id'] ?? $purchaseOrder->location_id,
-                    'description' => $detail['description'] ?? null,
-                ]);
+            if ($detailsToDeleteIds->isNotEmpty()) {
+                // Future-proofing: Here you could add a check to prevent deletion
+                // if a line is associated with a GRN.
+                $purchaseOrder->details()->whereIn('id', $detailsToDeleteIds)->delete();
+            }
+
+            foreach ($validatedData['details'] as $detailData) {
+                $payload = [
+                    'product_id' => $detailData['product_id'],
+                    'quantity' => $detailData['quantity'],
+                    'cost' => $detailData['cost'],
+                    'total' => $detailData['quantity'] * $detailData['cost'],
+                    'location_id' => $detailData['location_id'] ?? $purchaseOrder->location_id,
+                    'description' => $detailData['description'] ?? null,
+                ];
+
+                if (isset($detailData['id'])) {
+                    $purchaseOrder->details()->where('id', $detailData['id'])->update($payload);
+                } else {
+                    $purchaseOrder->details()->create($payload);
+                }
             }
 
             return $purchaseOrder;

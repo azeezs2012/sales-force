@@ -24,6 +24,7 @@ class PurchaseOrderValidator
             'po_status' => 'required|string|in:Draft,Submitted,Approved,Completed',
             
             'details' => 'required|array|min:1',
+            'details.*.id' => 'nullable|exists:purchase_order_details,id',
             'details.*.product_id' => 'required|exists:products,id',
             'details.*.quantity' => 'required|numeric|min:1',
             'details.*.cost' => 'required|numeric|min:0',
@@ -34,6 +35,7 @@ class PurchaseOrderValidator
             'details.required' => 'At least one product must be added to the purchase order.',
             'details.array' => 'The details must be an array.',
             'details.min' => 'At least one product must be added to the purchase order.',
+            'details.*.id.exists' => 'An invalid line item was provided.',
             'details.*.product_id.required' => 'A product must be selected for each line item.',
             'details.*.product_id.exists' => 'The selected product is invalid.',
             'details.*.quantity.required' => 'Quantity is required for each line item.',
