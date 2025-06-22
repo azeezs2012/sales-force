@@ -19,6 +19,9 @@ use App\Http\Controllers\TenantControllers\ProductCategoryController;
 use App\Http\Controllers\TenantControllers\PaymentTermController;
 use App\Http\Controllers\TenantControllers\CustomerController;
 use App\Http\Controllers\TenantControllers\SupplierController;
+use App\Http\Controllers\TenantControllers\AccountController;
+use App\Http\Controllers\TenantControllers\AccountTypeController;
+use App\Http\Controllers\TenantControllers\ProductController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\PasswordController;
 use Inertia\Inertia;
@@ -95,6 +98,14 @@ Route::middleware([
         Route::get('suppliers', function () {
             return Inertia::render('tenant/lists/Suppliers');
         })->name('tenant.list.suppliers');
+
+        Route::get('accounts', function () {
+            return Inertia::render('tenant/lists/Accounts');
+        })->name('tenant.list.accounts');
+
+        Route::get('products', function () {
+            return Inertia::render('tenant/lists/Products');
+        })->name('tenant.list.products');
 
         Route::redirect('settings', '/settings/profile');
 
@@ -181,6 +192,17 @@ Route::middleware([
             Route::get('/suppliers/{id}', [SupplierController::class, 'show']);
             Route::put('/suppliers/{id}', [SupplierController::class, 'update']);
             Route::delete('/suppliers/{id}', [SupplierController::class, 'destroy']);
+            Route::get('/account-types', [AccountTypeController::class, 'index']);
+            Route::get('/accounts', [AccountController::class, 'index']);
+            Route::post('/accounts', [AccountController::class, 'store']);
+            Route::get('/accounts/{id}', [AccountController::class, 'show']);
+            Route::put('/accounts/{id}', [AccountController::class, 'update']);
+            Route::delete('/accounts/{id}', [AccountController::class, 'destroy']);
+            Route::get('/products', [ProductController::class, 'index']);
+            Route::post('/products', [ProductController::class, 'store']);
+            Route::get('/products/{id}', [ProductController::class, 'show']);
+            Route::put('/products/{id}', [ProductController::class, 'update']);
+            Route::delete('/products/{id}', [ProductController::class, 'destroy']);
         });
     });
 });
