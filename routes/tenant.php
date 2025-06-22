@@ -22,6 +22,7 @@ use App\Http\Controllers\TenantControllers\SupplierController;
 use App\Http\Controllers\TenantControllers\AccountController;
 use App\Http\Controllers\TenantControllers\AccountTypeController;
 use App\Http\Controllers\TenantControllers\ProductController;
+use App\Http\Controllers\TenantControllers\PurchaseOrderController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\PasswordController;
 use Inertia\Inertia;
@@ -106,6 +107,10 @@ Route::middleware([
         Route::get('products', function () {
             return Inertia::render('tenant/lists/Products');
         })->name('tenant.list.products');
+
+        Route::get('purchase-orders', function () {
+            return Inertia::render('tenant/transactions/PurchaseOrders');
+        })->name('tenant.list.purchase-orders');
 
         Route::redirect('settings', '/settings/profile');
 
@@ -203,6 +208,11 @@ Route::middleware([
             Route::get('/products/{id}', [ProductController::class, 'show']);
             Route::put('/products/{id}', [ProductController::class, 'update']);
             Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+            Route::get('/purchase-orders', [PurchaseOrderController::class, 'index']);
+            Route::post('/purchase-orders', [PurchaseOrderController::class, 'store']);
+            Route::get('/purchase-orders/{id}', [PurchaseOrderController::class, 'show']);
+            Route::put('/purchase-orders/{id}', [PurchaseOrderController::class, 'update']);
+            Route::delete('/purchase-orders/{id}', [PurchaseOrderController::class, 'destroy']);
         });
     });
 });

@@ -5,7 +5,7 @@ import TenantNavUser from '@/components/TenantNavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarGroup } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, ChevronDown, Building2, Users, MapPin, ShoppingCart, CreditCard, Package, Boxes, FileText, Truck, BookOpenText } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, ChevronDown, Building2, Users, MapPin, ShoppingCart, CreditCard, Package, Boxes, FileText, Truck, BookOpenText, ShoppingBag } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 import { ref } from 'vue';
 
@@ -115,6 +115,17 @@ const listNavItems = {
                 title: 'Accounts',
                 href: '/accounts',
                 icon: BookOpenText,
+            },
+        ],
+    },
+    transactions: {
+        title: 'Transactions',
+        icon: ShoppingCart,
+        items: [
+            {
+                title: 'Purchase Orders',
+                href: '/purchase-orders',
+                icon: ShoppingBag,
             },
         ],
     },
