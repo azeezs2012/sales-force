@@ -103,6 +103,7 @@ const createGrnFromPos = async (poIds) => {
             total: (d.quantity - d.received_quantity) * d.cost,
             purchase_order_detail_id: d.id,
             product: d.product,
+            ordered_quantity: d.ordered_quantity ?? d.quantity,
         }));
         
         isFormVisible.value = true;
@@ -139,6 +140,7 @@ const addDetailRow = () => {
         total: 0,
         purchase_order_detail_id: null,
         product: null,
+        ordered_quantity: 0,
     });
 };
 
@@ -335,6 +337,8 @@ const confirmDelete = async () => {
                                     <TableHead>Qty</TableHead>
                                     <TableHead>Cost</TableHead>
                                     <TableHead>Total</TableHead>
+                                    <TableHead>PO Line ID</TableHead>
+                                    <TableHead>PO Line Qty</TableHead>
                                     <TableHead class="w-[50px]"></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -360,6 +364,8 @@ const confirmDelete = async () => {
                                     <TableCell><Input v-model="item.quantity" type="number" placeholder="Qty" /></TableCell>
                                     <TableCell><Input v-model="item.cost" type="number" placeholder="Cost"/></TableCell>
                                     <TableCell>{{ formatCurrency(item.quantity * item.cost) }}</TableCell>
+                                    <TableCell>{{ item.purchase_order_detail_id || '-' }}</TableCell>
+                                    <TableCell>{{ item.ordered_quantity !== undefined ? item.ordered_quantity : '-' }}</TableCell>
                                     <TableCell><Button variant="destructive" size="sm" @click="removeDetailRow(index)"><Trash2 class="h-4 w-4" /></Button></TableCell>
                                 </TableRow>
                             </TableBody>

@@ -154,7 +154,12 @@ class PurchaseOrderController extends Controller
         $details = PurchaseOrderDetail::with('product')
             ->whereIn('purchase_order_id', $poIds)
             ->whereRaw('quantity > received_quantity')
-            ->get();
+            ->get()
+            ->map(function ($detail) {
+                $arr = $detail->toArray();
+                $arr['ordered_quantity'] = $detail->quantity;
+                return $arr;
+            });
 
         return response()->json([
             'supplier_id' => $supplierId,
