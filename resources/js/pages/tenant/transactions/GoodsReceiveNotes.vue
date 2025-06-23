@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
+import axios from 'axios';
 
 const { toast } = useToast();
 
@@ -64,6 +65,7 @@ const fetchDropdownData = async () => {
         products.value = productRes.data;
         accounts.value = accountRes.data;
     } catch (error) {
+        console.log(error);
         toast({ title: 'Error', description: 'Failed to fetch dropdown data.', variant: 'destructive' });
     }
 };
@@ -241,7 +243,7 @@ const confirmDelete = async () => {
                             <TableRow v-for="grn in grns" :key="grn.id">
                                 <TableCell>{{ formatDate(grn.grn_date) }}</TableCell>
                                 <TableCell>GRN-{{ grn.id.substring(0, 8) }}</TableCell>
-                                <TableCell>{{ grn.supplier?.name }}</TableCell>
+                                <TableCell>{{ grn.supplier?.user?.name }}</TableCell>
                                 <TableCell><Badge>{{ grn.grn_status }}</Badge></TableCell>
                                 <TableCell>{{ formatCurrency(grn.total_amount) }}</TableCell>
                                 <TableCell>
@@ -285,7 +287,7 @@ const confirmDelete = async () => {
                             <Select v-model="form.location_id">
                                 <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</SelectItem>
+                                    <SelectItem v-for="l in locations" :key="l.id" :value="l.id">{{ l.location_name }}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -294,7 +296,7 @@ const confirmDelete = async () => {
                             <Select v-model="form.ap_account_id">
                                 <SelectTrigger><SelectValue placeholder="Select AP Account" /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem v-for="a in accounts" :key="a.id" :value="a.id">{{ a.name }}</SelectItem>
+                                    <SelectItem v-for="a in accounts" :key="a.id" :value="a.id">{{ a.account_name }}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -339,8 +341,8 @@ const confirmDelete = async () => {
                                         <Select v-model="item.product_id" :disabled="!!item.purchase_order_detail_id">
                                             <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem v-if="item.product" :value="item.product.id" >{{ item.product.name }}</SelectItem>
-                                                <SelectItem v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}</SelectItem>
+                                                <SelectItem v-if="item.product" :value="item.product.id" >{{ item.product.product_name }}</SelectItem>
+                                                <SelectItem v-for="p in products" :key="p.id" :value="p.id">{{ p.product_name }}</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </TableCell>
@@ -348,7 +350,7 @@ const confirmDelete = async () => {
                                         <Select v-model="item.location_id">
                                             <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</SelectItem>
+                                                <SelectItem v-for="l in locations" :key="l.id" :value="l.id">{{ l.location_name }}</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </TableCell>

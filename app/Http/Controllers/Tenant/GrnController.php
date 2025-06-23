@@ -17,11 +17,8 @@ class GrnController extends Controller
      */
     public function index()
     {
-        return GrnSummary::with([
-            'supplier:id,name',
-            'location:id,name',
-            'account:id,name'
-        ])->latest()->get();
+        $grns = GrnSummary::with('supplier', 'location', 'account')->latest()->get();
+        return response()->json($grns);
     }
 
     /**
@@ -88,13 +85,7 @@ class GrnController extends Controller
      */
     public function show(GrnSummary $grn)
     {
-        return $grn->load([
-            'details.product:id,name',
-            'details.location:id,name',
-            'supplier:id,name',
-            'location:id,name',
-            'account:id,name'
-        ]);
+        return $grn->load('details.product', 'details.location', 'supplier.user', 'location', 'account');
     }
 
     /**
