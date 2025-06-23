@@ -13,7 +13,7 @@ class PurchaseOrderController extends Controller
 {
     public function index()
     {
-        $purchaseOrders = PurchaseOrder::with('supplier', 'location', 'creator')->latest()->get();
+        $purchaseOrders = PurchaseOrder::with('supplier.user', 'location', 'creator')->latest()->get();
         return response()->json($purchaseOrders);
     }
 
