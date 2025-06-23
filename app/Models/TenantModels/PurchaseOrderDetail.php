@@ -2,8 +2,10 @@
 
 namespace App\Models\TenantModels;
 
+use App\Models\GrnDetail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseOrderDetail extends Model
 {
@@ -19,6 +21,7 @@ class PurchaseOrderDetail extends Model
         'cost',
         'total',
         'description',
+        'received_quantity'
     ];
 
     public function purchaseOrder()
@@ -34,5 +37,10 @@ class PurchaseOrderDetail extends Model
     public function location()
     {
         return $this->belongsTo(Location::class);
+    }
+
+    public function grnDetails(): HasMany
+    {
+        return $this->hasMany(GrnDetail::class);
     }
 } 

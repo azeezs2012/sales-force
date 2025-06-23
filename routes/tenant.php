@@ -23,6 +23,7 @@ use App\Http\Controllers\TenantControllers\AccountController;
 use App\Http\Controllers\TenantControllers\AccountTypeController;
 use App\Http\Controllers\TenantControllers\ProductController;
 use App\Http\Controllers\TenantControllers\PurchaseOrderController;
+use App\Http\Controllers\Tenant\GrnController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\PasswordController;
 use Inertia\Inertia;
@@ -111,6 +112,10 @@ Route::middleware([
         Route::get('purchase-orders', function () {
             return Inertia::render('tenant/transactions/PurchaseOrders');
         })->name('tenant.list.purchase-orders');
+
+        Route::get('grns', function () {
+            return Inertia::render('tenant/transactions/GoodsReceiveNotes');
+        })->name('tenant.list.grns');
 
         Route::redirect('settings', '/settings/profile');
 
@@ -213,6 +218,15 @@ Route::middleware([
             Route::get('/purchase-orders/{id}', [PurchaseOrderController::class, 'show']);
             Route::put('/purchase-orders/{id}', [PurchaseOrderController::class, 'update']);
             Route::delete('/purchase-orders/{id}', [PurchaseOrderController::class, 'destroy']);
+            Route::get('/po-details-for-grn', [PurchaseOrderController::class, 'getPoDetailsForGrn']);
+            Route::apiResource('grns', GrnController::class);
         });
+    });
+
+    Route::get('/grns/create', fn () => inertia('tenant/transactions/GoodsReceiveNotes'))->name('grns.create');
+    Route::get('/grns', fn () => inertia('tenant/transactions/GoodsReceiveNotes'))->name('grns.index');
+
+    Route::get('/{page}', function ($page) {
+        // ... existing code ...
     });
 });

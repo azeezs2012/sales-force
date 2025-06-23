@@ -135,4 +135,30 @@ class PurchaseOrderController extends Controller
 
         return response()->json(null, 204);
     }
+
+    public function getPoDetailsForGrn(Request $request)
+    {
+        $poIds = explode(',', $request->query('po_ids'));
+
+        if (empty($poIds) || empty($poIds[0])) {
+            return response()->json(['error' => 'No Purchase Order IDs provided.'], 400);
+        }
+
+        $suppliers = PurchaseOrder::whereIn('id', $poIds)->distinct('supplier_id')->pluck('supplier_id');
+        if ($suppliers->count() > 1) {
+            return response()->json(['error' => 'All selected Purchase Orders must belong to the same supplier.'], 400);
+        }
+
+        $supplierId = $suppliers->first();
+
+        $details = PurchaseOrderDetail::with('product')
+            ->whereIn('purchase_order_id', $poIds)
+            ->whereRaw('quantity > received_quantity')
+            ->get();
+
+        return response()->json([
+            'supplier_id' => $supplierId,
+            'details' => $details
+        ]);
+    }
 } 

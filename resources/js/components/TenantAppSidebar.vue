@@ -127,6 +127,11 @@ const listNavItems = {
                 href: '/purchase-orders',
                 icon: ShoppingBag,
             },
+            {
+                title: 'Goods Receive Notes',
+                href: '/grns',
+                icon: Truck,
+            },
         ],
     },
 };

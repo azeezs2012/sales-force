@@ -8,13 +8,25 @@
                 <CardHeader>
                     <div class="flex items-center justify-between">
                         <CardTitle>Purchase Orders</CardTitle>
-                        <Button @click="showCreateForm">Create New PO</Button>
+                        <div class="flex items-center gap-2">
+                            <Button @click="createGrnFromPos" :disabled="!canCreateGrn">Create GRN</Button>
+                            <Button @click="showCreateForm">Create New PO</Button>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead class="w-10">
+                                     <Checkbox @update:checked="(checked) => {
+                                        if (checked) {
+                                            selectedPoIds = purchaseOrders.map(po => po.id)
+                                        } else {
+                                            selectedPoIds = []
+                                        }
+                                    }" />
+                                </TableHead>
                                 <TableHead>Date</TableHead>
                                 <TableHead>PO #</TableHead>
                                 <TableHead>Supplier</TableHead>
@@ -25,6 +37,15 @@
                         </TableHeader>
                         <TableBody>
                             <TableRow v-for="po in purchaseOrders" :key="po.id">
+                                <TableCell>
+                                    <Checkbox :checked="selectedPoIds.includes(po.id)" @update:checked="(checked) => {
+                                        if (checked) {
+                                            selectedPoIds.push(po.id)
+                                        } else {
+                                            selectedPoIds = selectedPoIds.filter(id => id !== po.id)
+                                        }
+                                    }" />
+                                </TableCell>
                                 <TableCell>{{ formatDate(po.po_date) }}</TableCell>
                                 <TableCell>PO-{{ po.id }}</TableCell>
                                 <TableCell>{{ po.supplier?.user?.name }}</TableCell>
@@ -156,7 +177,7 @@
 </template>
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
 import { ref, onMounted, computed } from 'vue';
 import type { Ref } from 'vue';
@@ -172,6 +193,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const { toast } = useToast();
 const breadcrumbs = [{ title: 'Purchase Orders', href: '/purchase-orders' }];
@@ -210,6 +232,7 @@ const products: Ref<Product[]> = ref([]);
 const isFormVisible = ref(false);
 const isEditing = ref(false);
 const poToDelete: Ref<PurchaseOrder | null> = ref(null);
+const selectedPoIds = ref<string[]>([]);
 
 const initialFormState: PurchaseOrder = {
     id: '',
@@ -230,6 +253,14 @@ const grandTotal = computed(() => {
         return sum + (Number(item.total) || 0);
     }, 0);
 });
+
+const canCreateGrn = computed(() => selectedPoIds.value.length > 0);
+
+const createGrnFromPos = () => {
+    if (!canCreateGrn.value) return;
+    const poIds = selectedPoIds.value.join(',');
+    router.get(`/grns?po_ids=${poIds}`);
+};
 
 // Methods
 const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
