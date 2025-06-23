@@ -37,13 +37,17 @@
                         <TableBody>
                             <TableRow v-for="po in purchaseOrders" :key="po.id">
                                 <TableCell>
-                                    <Checkbox :checked="selectedPoIds.includes(po.id)" @update:checked="(checked) => {
-                                        if (checked) {
-                                            selectedPoIds.push(po.id)
-                                        } else {
-                                            selectedPoIds = selectedPoIds.filter(id => id !== po.id)
-                                        }
-                                    }" />
+                                    <Checkbox
+                                        :checked="selectedPoIds.includes(po.id)"
+                                        :disabled="selectedSupplierId && po.supplier_id !== selectedSupplierId"
+                                        @update:checked="(checked) => {
+                                            if (checked) {
+                                                selectedPoIds.push(po.id)
+                                            } else {
+                                                selectedPoIds = selectedPoIds.filter(id => id !== po.id)
+                                            }
+                                        }"
+                                    />
                                 </TableCell>
                                 <TableCell>{{ formatDate(po.po_date) }}</TableCell>
                                 <TableCell>PO-{{ po.id }}</TableCell>
@@ -259,6 +263,12 @@ const createGrnFromPos = () => {
     const poIds = selectedPoIds.value.join(',');
     router.get(`/grns?po_ids=${poIds}`);
 };
+
+// Add a computed property to get the supplier ID of the first selected PO
+const selectedSupplierId = computed(() => {
+    const firstSelected = purchaseOrders.value.find(po => selectedPoIds.value.includes(po.id));
+    return firstSelected ? firstSelected.supplier_id : null;
+});
 
 // Methods
 const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
