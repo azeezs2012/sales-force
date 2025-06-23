@@ -262,7 +262,6 @@ const confirmDelete = async () => {
                                 <TableHead>Date</TableHead>
                                 <TableHead>GRN #</TableHead>
                                 <TableHead>Supplier</TableHead>
-                                <TableHead>Status</TableHead>
                                 <TableHead>Total</TableHead>
                                 <TableHead class="w-[100px]">Actions</TableHead>
                             </TableRow>
@@ -272,7 +271,6 @@ const confirmDelete = async () => {
                                 <TableCell>{{ formatDate(grn.grn_date) }}</TableCell>
                                 <TableCell>GRN-{{ grn.id }}</TableCell>
                                 <TableCell>{{ grn.supplier?.user?.name }}</TableCell>
-                                <TableCell><Badge>{{ grn.grn_status }}</Badge></TableCell>
                                 <TableCell>{{ formatCurrency(grn.total_amount) }}</TableCell>
                                 <TableCell>
                                     <DropdownMenu>
@@ -335,16 +333,6 @@ const confirmDelete = async () => {
                         <div class="flex flex-col space-y-1.5 md:col-span-3">
                             <Label>Billing Address</Label>
                             <Textarea v-model="form.grn_billing_address" placeholder="Billing Address" />
-                        </div>
-                         <div class="flex flex-col space-y-1.5">
-                            <Label>Status</Label>
-                            <Select v-model="form.grn_status">
-                                <SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="draft">Draft</SelectItem>
-                                    <SelectItem value="posted">Posted</SelectItem>
-                                </SelectContent>
-                            </Select>
                         </div>
                     </CardContent>
                 </Card>

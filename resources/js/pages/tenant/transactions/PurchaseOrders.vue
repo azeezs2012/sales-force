@@ -30,7 +30,6 @@
                                 <TableHead>Date</TableHead>
                                 <TableHead>PO #</TableHead>
                                 <TableHead>Supplier</TableHead>
-                                <TableHead>Status</TableHead>
                                 <TableHead>Total</TableHead>
                                 <TableHead class="w-[100px]">Actions</TableHead>
                             </TableRow>
@@ -49,7 +48,6 @@
                                 <TableCell>{{ formatDate(po.po_date) }}</TableCell>
                                 <TableCell>PO-{{ po.id }}</TableCell>
                                 <TableCell>{{ po.supplier?.user?.name }}</TableCell>
-                                <TableCell><Badge>{{ po.po_status }}</Badge></TableCell>
                                 <TableCell>{{ formatCurrency(po.total_amount) }}</TableCell>
                                 <TableCell>
                                     <DropdownMenu>
