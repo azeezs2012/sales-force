@@ -67,6 +67,10 @@ const fetchDropdownData = async () => {
         locations.value = locationRes.data;
         products.value = productRes.data;
         accounts.value = accountRes.data;
+        // Set default AP Account if creating
+        if (!isEditing.value && accounts.value.length > 0) {
+            form.ap_account_id = accounts.value[0].id;
+        }
     } catch (error) {
         console.log(error);
         toast({ title: 'Error', description: 'Failed to fetch dropdown data.', variant: 'destructive' });
@@ -93,6 +97,21 @@ const createGrnFromPos = async (poIds) => {
         isEditing.value = false;
         
         form.supplier_id = supplier_id;
+        
+        // Fetch the first PO's main details
+        const firstPoId = Array.isArray(poIds) ? poIds[0] : poIds.split(',')[0];
+        if (firstPoId) {
+            const poRes = await axios.get(`/api/purchase-orders/${firstPoId}`);
+            const po = poRes.data;
+            form.grn_billing_address = po.po_billing_address || '';
+            form.grn_delivery_address = po.po_delivery_address || '';
+            form.location_id = po.location_id || null;
+        }
+        
+        // Set default AP Account on load
+        if (accounts.value.length > 0) {
+            form.ap_account_id = accounts.value[0].id;
+        }
         
         form.details = details.map(d => ({
             id: null,
@@ -154,6 +173,10 @@ const showCreateForm = () => {
     form.grn_date = new Date().toISOString().substr(0, 10);
     form.details = [];
     addDetailRow();
+    // Set default AP Account on load
+    if (accounts.value.length > 0) {
+        form.ap_account_id = accounts.value[0].id;
+    }
     isFormVisible.value = true;
 };
 
@@ -361,7 +384,21 @@ const confirmDelete = async () => {
                                             </SelectContent>
                                         </Select>
                                     </TableCell>
-                                    <TableCell><Input v-model="item.quantity" type="number" placeholder="Qty" /></TableCell>
+                                    <TableCell>
+                                        <Input
+                                            v-model="item.quantity"
+                                            type="number"
+                                            placeholder="Qty"
+                                            :min="1"
+                                            :max="item.purchase_order_detail_id ? (item.ordered_quantity - (item.received_quantity || 0)) : undefined"
+                                            @input="
+                                                if (item.purchase_order_detail_id && Number(item.quantity) > (item.ordered_quantity - (item.received_quantity || 0))) {
+                                                    item.quantity = item.ordered_quantity - (item.received_quantity || 0);
+                                                    toast({ title: 'Warning', description: 'Cannot exceed PO line remaining quantity.', variant: 'destructive' });
+                                                }
+                                            "
+                                        />
+                                    </TableCell>
                                     <TableCell><Input v-model="item.cost" type="number" placeholder="Cost"/></TableCell>
                                     <TableCell>{{ formatCurrency(item.quantity * item.cost) }}</TableCell>
                                     <TableCell>{{ item.purchase_order_detail_id || '-' }}</TableCell>
