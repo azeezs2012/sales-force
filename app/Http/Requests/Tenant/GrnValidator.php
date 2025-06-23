@@ -30,7 +30,7 @@ class GrnValidator extends FormRequest
             'grn_delivery_address' => 'nullable|string',
             'grn_status' => 'required|string|in:draft,posted',
             'details' => 'required|array|min:1',
-            'details.*.id' => 'nullable|string',
+            'details.*.id' => 'nullable|integer',
             'details.*.product_id' => 'required|exists:products,id',
             'details.*.location_id' => 'required|exists:locations,id',
             'details.*.quantity' => 'required|numeric|min:0.01',
