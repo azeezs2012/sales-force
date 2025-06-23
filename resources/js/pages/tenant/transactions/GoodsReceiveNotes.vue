@@ -45,9 +45,12 @@ const form = useForm({
 
 const fetchGrns = async () => {
     try {
+        console.log('Fetching GRNs...');
         const response = await axios.get('/api/grns');
+        console.log('GRNs response:', response.data);
         grns.value = response.data;
     } catch (error) {
+        console.error('Error fetching GRNs:', error);
         toast({ title: 'Error', description: 'Failed to fetch GRNs.', variant: 'destructive' });
     }
 };
@@ -121,7 +124,7 @@ const grandTotal = computed(() => {
 });
 
 const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0);
+    return (Number(value) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
 const formatDate = (dateString) => new Date(dateString).toLocaleDateString();
@@ -242,7 +245,7 @@ const confirmDelete = async () => {
                         <TableBody>
                             <TableRow v-for="grn in grns" :key="grn.id">
                                 <TableCell>{{ formatDate(grn.grn_date) }}</TableCell>
-                                <TableCell>GRN-{{ grn.id.substring(0, 8) }}</TableCell>
+                                <TableCell>GRN-{{ grn.id }}</TableCell>
                                 <TableCell>{{ grn.supplier?.user?.name }}</TableCell>
                                 <TableCell><Badge>{{ grn.grn_status }}</Badge></TableCell>
                                 <TableCell>{{ formatCurrency(grn.total_amount) }}</TableCell>

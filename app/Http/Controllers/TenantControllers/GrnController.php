@@ -17,7 +17,7 @@ class GrnController extends Controller
      */
     public function index()
     {
-        $grns = GrnSummary::with('supplier', 'location', 'account')->latest()->get();
+        $grns = GrnSummary::with('supplier.user', 'location', 'account')->latest()->get();
         return response()->json($grns);
     }
 
