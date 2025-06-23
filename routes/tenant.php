@@ -23,7 +23,7 @@ use App\Http\Controllers\TenantControllers\AccountController;
 use App\Http\Controllers\TenantControllers\AccountTypeController;
 use App\Http\Controllers\TenantControllers\ProductController;
 use App\Http\Controllers\TenantControllers\PurchaseOrderController;
-use App\Http\Controllers\Tenant\GrnController;
+use App\Http\Controllers\TenantControllers\GrnController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\PasswordController;
 use Inertia\Inertia;

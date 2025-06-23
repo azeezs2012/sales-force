@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Tenant;
+namespace App\Http\Controllers\TenantControllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\GrnValidator;
 use App\Models\GrnSummary;
-use App\Models\PurchaseOrder;
+use App\Models\TenantModels\PurchaseOrder;
 use App\Models\TenantModels\PurchaseOrderDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;

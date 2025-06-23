@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('grn_summaries', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
             $table->date('grn_date');
             $table->foreignId('supplier_id')->constrained('suppliers')->onDelete('cascade');
             $table->foreignId('location_id')->constrained('locations')->onDelete('cascade');

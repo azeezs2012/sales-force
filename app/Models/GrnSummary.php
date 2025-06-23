@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\TenantModels\Account;
+use App\Models\TenantModels\GrnDetail;
 use App\Models\TenantModels\Location;
 use App\Models\TenantModels\Supplier;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

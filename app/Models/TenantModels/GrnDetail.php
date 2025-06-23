@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\TenantModels;
 
 use App\Models\TenantModels\Location;
 use App\Models\TenantModels\Product;
