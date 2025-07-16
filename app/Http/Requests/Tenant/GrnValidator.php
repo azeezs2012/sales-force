@@ -33,7 +33,7 @@ class GrnValidator extends FormRequest
             'details.*.id' => 'nullable|integer',
             'details.*.product_id' => 'required|exists:products,id',
             'details.*.location_id' => 'required|exists:locations,id',
-            'details.*.quantity' => 'required|numeric|min:0.01',
+            'details.*.quantity' => 'required|numeric|min:0.01|max:999999',
             'details.*.cost' => 'required|numeric|min:0',
             'details.*.purchase_order_detail_id' => 'nullable|exists:purchase_order_details,id',
         ];

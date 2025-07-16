@@ -234,6 +234,8 @@ class GrnController extends Controller
         $poDetail = PurchaseOrderDetail::find($poDetailId);
         if ($poDetail) {
             $totalReceived = $poDetail->grnDetails()->sum('quantity');
+            // Ensure received quantity doesn't exceed ordered quantity
+            $totalReceived = min($totalReceived, $poDetail->quantity);
             $poDetail->update(['received_quantity' => $totalReceived]);
         }
     }
@@ -246,7 +248,7 @@ class GrnController extends Controller
             
             // Check if all lines are fully received
             $allFullyReceived = $details->every(function ($detail) {
-                return $detail->quantity <= $detail->received_quantity;
+                return $detail->quantity == $detail->received_quantity;
             });
             
             // Check if any lines have partial receipts
