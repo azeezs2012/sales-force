@@ -21,7 +21,7 @@ class PurchaseOrderValidator
             'location_id' => 'required|exists:locations,id',
             'po_billing_address' => 'required|string',
             'po_delivery_address' => 'required|string',
-            'po_status' => 'required|string|in:Draft,Submitted,Approved,Completed,Closed',
+            // po_status is managed by controller, not user-editable
             
             'details' => 'required|array|min:1',
             'details.*.id' => 'nullable|exists:purchase_order_details,id',

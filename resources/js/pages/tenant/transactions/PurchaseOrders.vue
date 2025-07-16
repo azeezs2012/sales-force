@@ -8,9 +8,22 @@
                 <CardHeader>
                     <div class="flex items-center justify-between">
                         <CardTitle>Purchase Orders</CardTitle>
-                        <div class="flex items-center gap-2">
-                            <Button @click="createGrnFromPos" :disabled="!canCreateGrn">Create GRN</Button>
-                            <Button @click="showCreateForm">Create New PO</Button>
+                        <div class="flex items-center gap-4">
+                            <Select v-model="statusFilter" class="w-32">
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Filter by status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Status</SelectItem>
+                                    <SelectItem value="Open">Open</SelectItem>
+                                    <SelectItem value="Partial">Partial</SelectItem>
+                                    <SelectItem value="Closed">Closed</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <div class="flex items-center gap-2">
+                                <Button @click="createGrnFromPos" :disabled="!canCreateGrn">Create GRN</Button>
+                                <Button @click="showCreateForm">Create New PO</Button>
+                            </div>
                         </div>
                     </div>
                 </CardHeader>
@@ -21,7 +34,7 @@
                                 <TableHead class="w-10">
                                      <Checkbox @update:checked="(checked) => {
                                         if (checked) {
-                                            selectedPoIds = purchaseOrders.map(po => po.id)
+                                            selectedPoIds = filteredPurchaseOrders.map(po => po.id)
                                         } else {
                                             selectedPoIds = []
                                         }
@@ -30,12 +43,13 @@
                                 <TableHead>Date</TableHead>
                                 <TableHead>PO #</TableHead>
                                 <TableHead>Supplier</TableHead>
+                                <TableHead>Status</TableHead>
                                 <TableHead>Total</TableHead>
                                 <TableHead class="w-[100px]">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            <TableRow v-for="po in purchaseOrders" :key="po.id">
+                            <TableRow v-for="po in filteredPurchaseOrders" :key="po.id">
                                 <TableCell>
                                     <Checkbox
                                         :checked="selectedPoIds.includes(po.id)"
@@ -52,6 +66,14 @@
                                 <TableCell>{{ formatDate(po.po_date) }}</TableCell>
                                 <TableCell>PO-{{ po.id }}</TableCell>
                                 <TableCell>{{ po.supplier?.user?.name }}</TableCell>
+                                <TableCell>
+                                    <Badge 
+                                        :variant="po.po_status === 'Closed' ? 'destructive' : po.po_status === 'Partial' ? 'secondary' : 'default'"
+                                        :class="po.po_status === 'Partial' ? 'bg-orange-500 text-white hover:bg-orange-500' : po.po_status === 'Closed' ? 'hover:bg-destructive' : 'hover:bg-primary'"
+                                    >
+                                        {{ po.po_status }}
+                                    </Badge>
+                                </TableCell>
                                 <TableCell>{{ formatCurrency(po.total_amount) }}</TableCell>
                                 <TableCell>
                                     <DropdownMenu>
@@ -63,8 +85,10 @@
                                     </DropdownMenu>
                                 </TableCell>
                             </TableRow>
-                            <TableRow v-if="purchaseOrders.length === 0">
-                                <TableCell colspan="6" class="h-24 text-center">No purchase orders found.</TableCell>
+                            <TableRow v-if="filteredPurchaseOrders.length === 0">
+                                <TableCell colspan="7" class="h-24 text-center">
+                                    {{ purchaseOrders.length === 0 ? 'No purchase orders found.' : 'No purchase orders match the selected filter.' }}
+                                </TableCell>
                             </TableRow>
                         </TableBody>
                     </Table>
@@ -73,10 +97,15 @@
 
             <!-- PO Create/Edit Form -->
             <div v-else class="flex flex-col gap-4 relative">
-                <!-- Closed PO Watermark -->
-                <div v-if="isPoClosed" class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+                <!-- Bottom Watermarks -->
+                <div v-if="isPoClosed" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 pointer-events-none">
                     <div class="bg-red-600/95 text-white px-12 py-6 rounded-xl transform -rotate-12 text-3xl font-bold shadow-2xl border-2 border-red-700">
                         CLOSED
+                    </div>
+                </div>
+                <div v-if="isPoPartial" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 pointer-events-none">
+                    <div class="bg-orange-600/95 text-white px-12 py-6 rounded-xl transform -rotate-12 text-3xl font-bold shadow-2xl border-2 border-orange-700">
+                        PARTIAL
                     </div>
                 </div>
                 <!-- Form Overlay for Closed PO -->
@@ -86,6 +115,9 @@
                         <div class="flex items-center justify-between">
                             <CardTitle>{{ isEditing ? 'Edit' : 'Create' }} Purchase Order</CardTitle>
                             <Badge v-if="isPoClosed" variant="destructive" class="text-lg px-4 py-2">
+                                {{ form.po_status }}
+                            </Badge>
+                            <Badge v-if="isPoPartial" variant="secondary" class="text-lg px-4 py-2 bg-orange-500 text-white">
                                 {{ form.po_status }}
                             </Badge>
                         </div>
@@ -113,19 +145,7 @@
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div class="flex flex-col space-y-1.5">
-                            <Label>Status</Label>
-                            <Select v-model="form.po_status">
-                                <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Draft">Draft</SelectItem>
-                                    <SelectItem value="Submitted">Submitted</SelectItem>
-                                    <SelectItem value="Approved">Approved</SelectItem>
-                                    <SelectItem value="Completed">Completed</SelectItem>
-                                    <SelectItem value="Closed">Closed</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+
                         <div class="flex flex-col space-y-1.5 md:col-span-3">
                             <Label>Delivery Address</Label>
                             <Input v-model="form.po_delivery_address" placeholder="Delivery Address" />
@@ -294,6 +314,7 @@ const isFormVisible = ref(false);
 const isEditing = ref(false);
 const poToDelete: Ref<PurchaseOrder | null> = ref(null);
 const selectedPoIds = ref<string[]>([]);
+const statusFilter = ref<string>('all');
 
 const initialFormState: PurchaseOrder = {
     id: '',
@@ -302,7 +323,7 @@ const initialFormState: PurchaseOrder = {
     location_id: '',
     po_billing_address: '',
     po_delivery_address: '',
-    po_status: 'Draft',
+    po_status: 'Open', // Managed by controller
     total_amount: 0,
     details: [],
 };
@@ -318,6 +339,7 @@ const grandTotal = computed(() => {
 const canCreateGrn = computed(() => selectedPoIds.value.length > 0);
 
 const isPoClosed = computed(() => form.value.po_status === 'Closed');
+const isPoPartial = computed(() => form.value.po_status === 'Partial');
 
 const createGrnFromPos = () => {
     if (!canCreateGrn.value) return;
@@ -329,6 +351,13 @@ const createGrnFromPos = () => {
 const selectedSupplierId = computed(() => {
     const firstSelected = purchaseOrders.value.find(po => selectedPoIds.value.includes(po.id));
     return firstSelected ? firstSelected.supplier_id : null;
+});
+
+const filteredPurchaseOrders = computed(() => {
+    if (statusFilter.value === 'all') {
+        return purchaseOrders.value;
+    }
+    return purchaseOrders.value.filter(po => po.po_status === statusFilter.value);
 });
 
 // Methods

@@ -37,7 +37,7 @@ class PurchaseOrderController extends Controller
                 'location_id' => $validatedData['location_id'],
                 'po_billing_address' => $validatedData['po_billing_address'],
                 'po_delivery_address' => $validatedData['po_delivery_address'],
-                'po_status' => $validatedData['po_status'],
+                'po_status' => 'Open', // Always start as Open
                 'total_amount' => $totalAmount,
                 'created_by' => auth()->id(),
             ]);
@@ -100,7 +100,7 @@ class PurchaseOrderController extends Controller
                 'location_id' => $validatedData['location_id'],
                 'po_billing_address' => $validatedData['po_billing_address'],
                 'po_delivery_address' => $validatedData['po_delivery_address'],
-                'po_status' => $validatedData['po_status'],
+                // po_status is managed by controller, not user-editable
                 'total_amount' => $totalAmount,
                 'updated_by' => auth()->id(),
             ]);

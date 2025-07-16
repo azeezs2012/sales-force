@@ -197,10 +197,17 @@ class GrnController extends Controller
 
             $grn->delete(); // This will cascade delete details
 
-            // After deleting, recalculate received quantities
-            foreach (array_unique($poIdsToUpdate) as $poDetailId) {
-                $this->updatePoDetailReceivedQuantity($poDetailId);
-                $this->checkAndUpdatePoStatus(PurchaseOrderDetail::find($poDetailId)->purchase_order_id);
+            // After deleting, recalculate received quantities and update PO status
+            foreach (array_unique($poIdsToUpdate) as $poId) {
+                $po = PurchaseOrder::with('details')->find($poId);
+                if ($po) {
+                    // Update all PO details for this PO
+                    foreach ($po->details as $poDetail) {
+                        $this->updatePoDetailReceivedQuantity($poDetail->id);
+                    }
+                    // Check and update PO status
+                    $this->checkAndUpdatePoStatus($poId);
+                }
             }
             DB::commit();
             return response()->json(['message' => 'GRN deleted successfully.']);
@@ -223,11 +230,35 @@ class GrnController extends Controller
     {
         $po = PurchaseOrder::with('details')->find($poId);
         if ($po) {
-            $isClosed = $po->details->every(function ($detail) {
+            $details = $po->details;
+            
+            // Check if all lines are fully received
+            $allFullyReceived = $details->every(function ($detail) {
                 return $detail->quantity <= $detail->received_quantity;
             });
-
-            $po->update(['po_status' => $isClosed ? 'Closed' : 'Open']);
+            
+            // Check if any lines have partial receipts
+            $hasPartialReceipts = $details->some(function ($detail) {
+                return $detail->received_quantity > 0 && $detail->received_quantity < $detail->quantity;
+            });
+            
+            // Check if no lines have any receipts
+            $noReceipts = $details->every(function ($detail) {
+                return $detail->received_quantity == 0;
+            });
+            
+            // Determine new status
+            $newStatus = 'Open';
+            if ($allFullyReceived) {
+                $newStatus = 'Closed';
+            } elseif ($hasPartialReceipts) {
+                $newStatus = 'Partial';
+            }
+            
+            // Update status if it has changed
+            if ($po->po_status !== $newStatus) {
+                $po->update(['po_status' => $newStatus]);
+            }
         }
     }
 
