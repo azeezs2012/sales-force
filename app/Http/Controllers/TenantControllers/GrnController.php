@@ -4,7 +4,7 @@ namespace App\Http\Controllers\TenantControllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\GrnValidator;
-use App\Models\GrnSummary;
+use App\Models\TenantModels\GrnSummary;
 use App\Models\TenantModels\PurchaseOrder;
 use App\Models\TenantModels\PurchaseOrderDetail;
 use Illuminate\Http\Request;
