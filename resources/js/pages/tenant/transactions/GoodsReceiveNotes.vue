@@ -1,7 +1,7 @@
 <script setup>
 import { Head, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,7 @@ const accounts = ref([]);
 
 const isFormVisible = ref(false);
 const isEditing = ref(false);
+const showConfirmDelete = ref(false);
 const grnToDelete = ref(null);
 
 const form = useForm({
@@ -86,6 +87,20 @@ onMounted(() => {
     if (poIds) {
         createGrnFromPos(poIds);
     }
+    
+    // Add global escape key handler for dialog cleanup
+    const handleEscape = (event) => {
+        if (event.key === 'Escape' && grnToDelete.value) {
+            closeDeleteDialog();
+        }
+    };
+    
+    document.addEventListener('keydown', handleEscape);
+    
+    // Cleanup on unmount
+    return () => {
+        document.removeEventListener('keydown', handleEscape);
+    };
 });
 
 const createGrnFromPos = async (poIds) => {
@@ -220,23 +235,27 @@ const saveGrn = async () => {
     }
 };
 
-const showDeleteDialog = (grn) => {
+const showDeleteConfirm = (grn) => {
     grnToDelete.value = grn;
+    showConfirmDelete.value = true;
 };
 
-const closeDeleteDialog = () => {
+const hideDeleteConfirm = () => {
+    showConfirmDelete.value = false;
     grnToDelete.value = null;
 };
 
 const confirmDelete = async () => {
     if (!grnToDelete.value) return;
+    
     try {
         await axios.delete(`/api/grns/${grnToDelete.value.id}`);
         toast({ title: 'Success', description: 'GRN deleted successfully.' });
         fetchGrns();
-        closeDeleteDialog();
     } catch (error) {
         toast({ title: 'Error', description: 'Failed to delete GRN.', variant: 'destructive' });
+    } finally {
+        hideDeleteConfirm();
     }
 };
 
@@ -277,7 +296,7 @@ const confirmDelete = async () => {
                                         <DropdownMenuTrigger as-child><Button variant="ghost" class="h-8 w-8 p-0"><MoreHorizontal class="h-4 w-4" /></Button></DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuItem @click="editGrn(grn.id)">Edit</DropdownMenuItem>
-                                            <DropdownMenuItem @click="showDeleteDialog(grn)" class="text-destructive focus:text-destructive">Delete</DropdownMenuItem>
+                                            <DropdownMenuItem @click="showDeleteConfirm(grn)" class="text-destructive focus:text-destructive">Delete</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
@@ -409,18 +428,24 @@ const confirmDelete = async () => {
             </div>
         </div>
 
-        <!-- Delete Confirmation Dialog -->
-        <Dialog :open="!!grnToDelete" @update:open="closeDeleteDialog">
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Delete Goods Receive Note</DialogTitle>
-                    <DialogDescription>Are you sure? This action cannot be undone.</DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                    <Button variant="ghost" @click="closeDeleteDialog">Cancel</Button>
+        <!-- Custom Delete Confirmation Modal -->
+        <div v-if="showConfirmDelete" class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div class="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-foreground">Delete Goods Receive Note</h3>
+                    <button @click="hideDeleteConfirm" class="text-muted-foreground hover:text-foreground transition-colors">
+                        <X class="h-5 w-5" />
+                    </button>
+                </div>
+                <p class="text-muted-foreground mb-6">
+                    Are you sure you want to delete Goods Receive Note <strong class="text-foreground">GRN-{{ grnToDelete?.id }}</strong>? 
+                    This action cannot be undone.
+                </p>
+                <div class="flex justify-end gap-3">
+                    <Button variant="outline" @click="hideDeleteConfirm">Cancel</Button>
                     <Button variant="destructive" @click="confirmDelete">Delete</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </div>
+            </div>
+        </div>
     </AppLayout>
 </template> 

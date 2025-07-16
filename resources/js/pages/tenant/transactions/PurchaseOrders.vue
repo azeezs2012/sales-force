@@ -80,7 +80,7 @@
                                         <DropdownMenuTrigger as-child><Button variant="ghost" class="h-8 w-8 p-0"><MoreHorizontal class="h-4 w-4" /></Button></DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuItem @click="editPurchaseOrder(po.id)">Edit</DropdownMenuItem>
-                                            <DropdownMenuItem @click="showDeleteDialog(po)" class="text-destructive focus:text-destructive">Delete</DropdownMenuItem>
+                                            <DropdownMenuItem @click="showDeleteConfirm(po)" class="text-destructive focus:text-destructive">Delete</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
@@ -239,19 +239,26 @@
             </div>
         </div>
 
-        <!-- Delete Confirmation Dialog -->
-        <Dialog :open="!!poToDelete" @update:open="closeDeleteDialog">
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Delete Purchase Order</DialogTitle>
-                    <DialogDescription>Are you sure? This action cannot be undone.</DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                    <Button variant="ghost" @click="closeDeleteDialog">Cancel</Button>
+        <!-- Custom Delete Confirmation Modal -->
+        <div v-if="showConfirmDelete" class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div class="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-foreground">Delete Purchase Order</h3>
+                    <button @click="hideDeleteConfirm" class="text-muted-foreground hover:text-foreground transition-colors">
+                        <X class="h-5 w-5" />
+                    </button>
+                </div>
+                <p class="text-muted-foreground mb-6">
+                    Are you sure you want to delete Purchase Order <strong class="text-foreground">PO-{{ poToDelete?.id }}</strong>? 
+                    This action cannot be undone.
+                </p>
+                <div class="flex justify-end gap-3">
+                    <Button variant="outline" @click="hideDeleteConfirm">Cancel</Button>
                     <Button variant="destructive" @click="confirmDelete">Delete</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </div>
+            </div>
+        </div>
+
     </AppLayout>
 </template>
 
@@ -312,7 +319,9 @@ const locations: Ref<Location[]> = ref([]);
 const products: Ref<Product[]> = ref([]);
 const isFormVisible = ref(false);
 const isEditing = ref(false);
-const poToDelete: Ref<PurchaseOrder | null> = ref(null);
+const showConfirmDelete = ref(false);
+const poToDelete = ref<PurchaseOrder | null>(null);
+
 const selectedPoIds = ref<string[]>([]);
 const statusFilter = ref<string>('all');
 
@@ -473,18 +482,27 @@ const editPurchaseOrder = async (id: string) => {
     }
 };
 
-const showDeleteDialog = (po: PurchaseOrder) => { poToDelete.value = po; };
-const closeDeleteDialog = () => { poToDelete.value = null; };
+const showDeleteConfirm = (po: PurchaseOrder) => {
+    poToDelete.value = po;
+    showConfirmDelete.value = true;
+};
+
+const hideDeleteConfirm = () => {
+    showConfirmDelete.value = false;
+    poToDelete.value = null;
+};
 
 const confirmDelete = async () => {
     if (!poToDelete.value) return;
+    
     try {
         await axios.delete(`/api/purchase-orders/${poToDelete.value.id}`);
         await fetchPOs();
         toast({ title: 'Success', description: 'Purchase Order deleted successfully!' });
-        closeDeleteDialog();
     } catch (error: any) {
         toast({ title: 'Error', description: error.response?.data?.message || 'Failed to delete PO.', variant: 'destructive' });
+    } finally {
+        hideDeleteConfirm();
     }
 };
 
