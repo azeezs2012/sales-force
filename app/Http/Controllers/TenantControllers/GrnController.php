@@ -28,6 +28,12 @@ class GrnController extends Controller
     {
         $validated = $request->validated();
 
+        // Validate that GRN quantities don't exceed PO line quantities
+        $validationResult = $this->validateGrnQuantities($validated['details']);
+        if (!$validationResult['valid']) {
+            return response()->json(['message' => $validationResult['message']], 422);
+        }
+
         DB::beginTransaction();
         try {
             $totalAmount = collect($validated['details'])->sum(function ($detail) {
@@ -94,6 +100,12 @@ class GrnController extends Controller
     public function update(GrnValidator $request, GrnSummary $grn)
     {
         $validated = $request->validated();
+
+        // Validate that GRN quantities don't exceed PO line quantities
+        $validationResult = $this->validateGrnQuantities($validated['details'], $grn);
+        if (!$validationResult['valid']) {
+            return response()->json(['message' => $validationResult['message']], 422);
+        }
 
         DB::beginTransaction();
         try {
@@ -217,5 +229,49 @@ class GrnController extends Controller
 
             $po->update(['po_status' => $isClosed ? 'Closed' : 'Open']);
         }
+    }
+
+    /**
+     * Validate that GRN quantities don't exceed PO line quantities
+     */
+    private function validateGrnQuantities($details, $grn = null)
+    {
+        foreach ($details as $detail) {
+            if (!empty($detail['purchase_order_detail_id'])) {
+                $poDetail = PurchaseOrderDetail::find($detail['purchase_order_detail_id']);
+                
+                if (!$poDetail) {
+                    return [
+                        'valid' => false,
+                        'message' => "Purchase order detail not found for line {$detail['purchase_order_detail_id']}"
+                    ];
+                }
+
+                // Calculate current total received quantity for this PO detail
+                $currentReceivedQuantity = $poDetail->grnDetails()->sum('quantity');
+                
+                // If this is an update, subtract the quantity of the current GRN detail being updated
+                if ($grn && isset($detail['id'])) {
+                    $existingGrnDetail = $grn->details()->find($detail['id']);
+                    if ($existingGrnDetail) {
+                        $currentReceivedQuantity -= $existingGrnDetail->quantity;
+                    }
+                }
+
+                // Calculate what the total received quantity would be after this GRN
+                $newReceivedQuantity = $currentReceivedQuantity + $detail['quantity'];
+                
+                // Check if this would exceed the original PO quantity
+                if ($newReceivedQuantity > $poDetail->quantity) {
+                    $remainingQuantity = $poDetail->quantity - $currentReceivedQuantity;
+                    return [
+                        'valid' => false,
+                        'message' => "Cannot receive {$detail['quantity']} units. Only {$remainingQuantity} units remaining for PO line {$detail['purchase_order_detail_id']} (original quantity: {$poDetail->quantity})"
+                    ];
+                }
+            }
+        }
+
+        return ['valid' => true];
     }
 }

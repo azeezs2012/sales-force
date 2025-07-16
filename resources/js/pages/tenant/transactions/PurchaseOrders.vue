@@ -72,9 +72,24 @@
             </Card>
 
             <!-- PO Create/Edit Form -->
-            <div v-else class="flex flex-col gap-4">
+            <div v-else class="flex flex-col gap-4 relative">
+                <!-- Closed PO Watermark -->
+                <div v-if="isPoClosed" class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+                    <div class="bg-red-600/95 text-white px-12 py-6 rounded-xl transform -rotate-12 text-3xl font-bold shadow-2xl border-2 border-red-700">
+                        CLOSED
+                    </div>
+                </div>
+                <!-- Form Overlay for Closed PO -->
+                <div v-if="isPoClosed" class="absolute inset-0 z-5 bg-gray-900/20 pointer-events-none rounded-lg"></div>
                 <Card>
-                    <CardHeader><CardTitle>{{ isEditing ? 'Edit' : 'Create' }} Purchase Order</CardTitle></CardHeader>
+                    <CardHeader>
+                        <div class="flex items-center justify-between">
+                            <CardTitle>{{ isEditing ? 'Edit' : 'Create' }} Purchase Order</CardTitle>
+                            <Badge v-if="isPoClosed" variant="destructive" class="text-lg px-4 py-2">
+                                {{ form.po_status }}
+                            </Badge>
+                        </div>
+                    </CardHeader>
                     <CardContent class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="flex flex-col space-y-1.5">
                             <Label>Date</Label>
@@ -95,6 +110,19 @@
                                 <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem v-for="l in locations" :key="l.id" :value="l.id">{{ l.location_name }}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div class="flex flex-col space-y-1.5">
+                            <Label>Status</Label>
+                            <Select v-model="form.po_status">
+                                <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Draft">Draft</SelectItem>
+                                    <SelectItem value="Submitted">Submitted</SelectItem>
+                                    <SelectItem value="Approved">Approved</SelectItem>
+                                    <SelectItem value="Completed">Completed</SelectItem>
+                                    <SelectItem value="Closed">Closed</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -159,7 +187,7 @@
                                     </TableCell>
                                     <TableCell>
                                         <div class="text-sm text-muted-foreground">
-                                            {{ item.remaining_quantity || item.quantity }}
+                                            {{ calculateRemainingQuantity(item) }}
                                         </div>
                                     </TableCell>
                                     <TableCell><Input v-model="item.cost" type="number" placeholder="Cost" @input="updateTotal(item)"/></TableCell>
@@ -289,6 +317,8 @@ const grandTotal = computed(() => {
 
 const canCreateGrn = computed(() => selectedPoIds.value.length > 0);
 
+const isPoClosed = computed(() => form.value.po_status === 'Closed');
+
 const createGrnFromPos = () => {
     if (!canCreateGrn.value) return;
     const poIds = selectedPoIds.value.join(',');
@@ -331,17 +361,19 @@ const fetchDropdownData = async () => {
 
 const showCreateForm = () => {
     isEditing.value = false;
+    const initialDetail = { 
+        product_id: '', 
+        location_id: '', 
+        quantity: 1, 
+        cost: 0, 
+        total: 0,
+        received_quantity: 0,
+        remaining_quantity: 1
+    };
+    initialDetail.remaining_quantity = calculateRemainingQuantity(initialDetail);
     form.value = { 
         ...initialFormState, 
-        details: [ { 
-            product_id: '', 
-            location_id: '', 
-            quantity: 1, 
-            cost: 0, 
-            total: 0,
-            received_quantity: 0,
-            remaining_quantity: 1
-        } ] 
+        details: [initialDetail] 
     };
     isFormVisible.value = true;
 };
@@ -349,7 +381,7 @@ const showCreateForm = () => {
 const hideForm = () => { isFormVisible.value = false; };
 
 const addDetail = () => {
-    form.value.details.push({ 
+    const newDetail = { 
         product_id: '', 
         location_id: form.value.location_id, 
         quantity: 1, 
@@ -357,13 +389,23 @@ const addDetail = () => {
         total: 0,
         received_quantity: 0,
         remaining_quantity: 1
-    });
+    };
+    newDetail.remaining_quantity = calculateRemainingQuantity(newDetail);
+    form.value.details.push(newDetail);
 };
 const removeDetail = (index: number) => {
     form.value.details.splice(index, 1);
 };
 const updateTotal = (item: PurchaseOrderDetail) => {
     item.total = (Number(item.quantity) || 0) * (Number(item.cost) || 0);
+    // Update remaining quantity in real-time
+    item.remaining_quantity = calculateRemainingQuantity(item);
+};
+
+const calculateRemainingQuantity = (item: PurchaseOrderDetail) => {
+    const quantity = Number(item.quantity) || 0;
+    const received = Number(item.received_quantity) || 0;
+    return Math.max(0, quantity - received);
 };
 
 const handleSubmit = async () => {
@@ -390,6 +432,12 @@ const editPurchaseOrder = async (id: string) => {
             ...response.data,
             po_date: new Date(response.data.po_date).toISOString().split('T')[0],
         };
+        
+        // Calculate remaining quantity for each detail
+        form.value.details.forEach(detail => {
+            detail.remaining_quantity = calculateRemainingQuantity(detail);
+        });
+        
         isFormVisible.value = true;
     } catch (error) {
         toast({ title: 'Error', description: 'Failed to fetch purchase order details.', variant: 'destructive' });
