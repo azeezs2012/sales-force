@@ -91,7 +91,19 @@ class GrnController extends Controller
      */
     public function show(GrnSummary $grn)
     {
-        return $grn->load('details.product', 'details.location', 'supplier.user', 'location', 'account');
+        $grn = $grn->load('details.product', 'details.location', 'supplier.user', 'location', 'account');
+        
+        // Add PO line information to each detail for display
+        $grn->details->each(function ($detail) {
+            if ($detail->purchase_order_detail_id) {
+                $poDetail = \App\Models\TenantModels\PurchaseOrderDetail::find($detail->purchase_order_detail_id);
+                if ($poDetail) {
+                    $detail->ordered_quantity = $poDetail->quantity;
+                }
+            }
+        });
+        
+        return $grn;
     }
 
     /**
