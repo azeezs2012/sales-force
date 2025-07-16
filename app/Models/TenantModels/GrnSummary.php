@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\TenantModels;
 
 use App\Models\TenantModels\Account;
 use App\Models\TenantModels\GrnDetail;
@@ -45,4 +45,4 @@ class GrnSummary extends Model
     {
         return $this->belongsTo(Account::class, 'ap_account_id');
     }
-}
+} 
