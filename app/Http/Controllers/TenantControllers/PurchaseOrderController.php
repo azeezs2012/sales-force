@@ -62,6 +62,13 @@ class PurchaseOrderController extends Controller
     public function show($id)
     {
         $purchaseOrder = PurchaseOrder::with('details.product', 'details.location', 'supplier', 'location', 'creator', 'updater')->findOrFail($id);
+        
+        // Add received_quantity to each detail for display
+        $purchaseOrder->details->each(function ($detail) {
+            $detail->received_quantity = $detail->received_quantity ?? 0;
+            $detail->remaining_quantity = $detail->quantity - $detail->received_quantity;
+        });
+        
         return response()->json($purchaseOrder);
     }
 
@@ -75,6 +82,12 @@ class PurchaseOrderController extends Controller
         }
         
         $validatedData = $validator->validated();
+
+        // Validate that received lines cannot be modified
+        $validationResult = $this->validateReceivedLines($purchaseOrder, $validatedData);
+        if (!$validationResult['valid']) {
+            return response()->json(['message' => $validationResult['message']], 422);
+        }
 
         $updatedPurchaseOrder = DB::transaction(function () use ($purchaseOrder, $validatedData) {
             $totalAmount = collect($validatedData['details'])->sum(function ($detail) {
@@ -96,8 +109,17 @@ class PurchaseOrderController extends Controller
             $detailsToDeleteIds = collect($purchaseOrder->details)->pluck('id')->diff($incomingDetailIds);
 
             if ($detailsToDeleteIds->isNotEmpty()) {
-                // Future-proofing: Here you could add a check to prevent deletion
-                // if a line is associated with a GRN.
+                // Check if any lines to be deleted have received quantities
+                $linesWithReceipts = $purchaseOrder->details()
+                    ->whereIn('id', $detailsToDeleteIds)
+                    ->where('received_quantity', '>', 0)
+                    ->get();
+
+                if ($linesWithReceipts->isNotEmpty()) {
+                    $lineNumbers = $linesWithReceipts->pluck('id')->join(', ');
+                    throw new \Exception("Cannot delete lines with received quantities. Lines: {$lineNumbers}");
+                }
+
                 $purchaseOrder->details()->whereIn('id', $detailsToDeleteIds)->delete();
             }
 
@@ -112,6 +134,14 @@ class PurchaseOrderController extends Controller
                 ];
 
                 if (isset($detailData['id'])) {
+                    // Check if quantity is being reduced below received amount
+                    $existingDetail = $purchaseOrder->details()->find($detailData['id']);
+                    if ($existingDetail && $existingDetail->received_quantity > 0) {
+                        if ($detailData['quantity'] < $existingDetail->received_quantity) {
+                            throw new \Exception("Cannot reduce quantity below received amount ({$existingDetail->received_quantity}) for line {$detailData['id']}");
+                        }
+                    }
+                    
                     $purchaseOrder->details()->where('id', $detailData['id'])->update($payload);
                 } else {
                     $purchaseOrder->details()->create($payload);
@@ -121,7 +151,15 @@ class PurchaseOrderController extends Controller
             return $purchaseOrder;
         });
 
-        return response()->json($updatedPurchaseOrder->load('details.product', 'supplier', 'location'));
+        $updatedPurchaseOrder = $updatedPurchaseOrder->load('details.product', 'supplier', 'location');
+        
+        // Add received_quantity to each detail for display
+        $updatedPurchaseOrder->details->each(function ($detail) {
+            $detail->received_quantity = $detail->received_quantity ?? 0;
+            $detail->remaining_quantity = $detail->quantity - $detail->received_quantity;
+        });
+        
+        return response()->json($updatedPurchaseOrder);
     }
 
     public function destroy($id)
@@ -165,5 +203,46 @@ class PurchaseOrderController extends Controller
             'supplier_id' => $supplierId,
             'details' => $details
         ]);
+    }
+
+    /**
+     * Validate that received lines cannot be modified inappropriately
+     */
+    private function validateReceivedLines($purchaseOrder, $validatedData)
+    {
+        $incomingDetailIds = collect($validatedData['details'])->pluck('id')->filter()->all();
+        $existingDetails = $purchaseOrder->details()->whereIn('id', $incomingDetailIds)->get()->keyBy('id');
+
+        foreach ($validatedData['details'] as $detailData) {
+            if (isset($detailData['id']) && isset($existingDetails[$detailData['id']])) {
+                $existingDetail = $existingDetails[$detailData['id']];
+                
+                // Check if quantity is being reduced below received amount
+                if ($existingDetail->received_quantity > 0 && $detailData['quantity'] < $existingDetail->received_quantity) {
+                    return [
+                        'valid' => false,
+                        'message' => "Cannot reduce quantity below received amount ({$existingDetail->received_quantity}) for line {$detailData['id']}"
+                    ];
+                }
+
+                // Check if product is being changed on a received line
+                if ($existingDetail->received_quantity > 0 && $detailData['product_id'] != $existingDetail->product_id) {
+                    return [
+                        'valid' => false,
+                        'message' => "Cannot change product on line {$detailData['id']} as it has received quantities"
+                    ];
+                }
+
+                // Check if location is being changed on a received line
+                if ($existingDetail->received_quantity > 0 && $detailData['location_id'] != $existingDetail->location_id) {
+                    return [
+                        'valid' => false,
+                        'message' => "Cannot change location on line {$detailData['id']} as it has received quantities"
+                    ];
+                }
+            }
+        }
+
+        return ['valid' => true];
     }
 } 

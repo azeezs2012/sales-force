@@ -118,6 +118,8 @@
                                     <TableHead class="w-2/5">Product</TableHead>
                                     <TableHead>Location</TableHead>
                                     <TableHead>Qty</TableHead>
+                                    <TableHead>Received</TableHead>
+                                    <TableHead>Remaining</TableHead>
                                     <TableHead>Cost</TableHead>
                                     <TableHead>Total</TableHead>
                                     <TableHead class="w-[50px]"></TableHead>
@@ -126,7 +128,7 @@
                             <TableBody>
                                 <TableRow v-for="(item, index) in form.details" :key="index">
                                     <TableCell>
-                                        <Select v-model="item.product_id">
+                                        <Select v-model="item.product_id" :disabled="!!item.received_quantity && item.received_quantity > 0">
                                             <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem v-for="p in products" :key="p.id" :value="p.id">{{ p.product_name }}</SelectItem>
@@ -134,17 +136,44 @@
                                         </Select>
                                     </TableCell>
                                     <TableCell>
-                                        <Select v-model="item.location_id">
+                                        <Select v-model="item.location_id" :disabled="!!item.received_quantity && item.received_quantity > 0">
                                             <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem v-for="l in locations" :key="l.id" :value="l.id">{{ l.location_name }}</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </TableCell>
-                                    <TableCell><Input v-model="item.quantity" type="number" placeholder="Qty" @input="updateTotal(item)"/></TableCell>
+                                    <TableCell>
+                                        <Input 
+                                            v-model="item.quantity" 
+                                            type="number" 
+                                            placeholder="Qty" 
+                                            :min="item.received_quantity || 1"
+                                            @input="updateTotal(item)"
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <div class="text-sm text-muted-foreground">
+                                            {{ item.received_quantity || 0 }}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div class="text-sm text-muted-foreground">
+                                            {{ item.remaining_quantity || item.quantity }}
+                                        </div>
+                                    </TableCell>
                                     <TableCell><Input v-model="item.cost" type="number" placeholder="Cost" @input="updateTotal(item)"/></TableCell>
                                     <TableCell>{{ formatCurrency(item.total) }}</TableCell>
-                                    <TableCell><Button variant="destructive" size="sm" @click="removeDetail(index)"><Trash class="h-4 w-4" /></Button></TableCell>
+                                    <TableCell>
+                                        <Button 
+                                            variant="destructive" 
+                                            size="sm" 
+                                            @click="removeDetail(index)"
+                                            :disabled="!!item.received_quantity && item.received_quantity > 0"
+                                        >
+                                            <Trash class="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
                                 </TableRow>
                             </TableBody>
                         </Table>
@@ -212,6 +241,8 @@ interface PurchaseOrderDetail {
     quantity: number;
     cost: number;
     total: number;
+    received_quantity?: number;
+    remaining_quantity?: number;
 }
 interface PurchaseOrder {
     id: string;
@@ -300,14 +331,33 @@ const fetchDropdownData = async () => {
 
 const showCreateForm = () => {
     isEditing.value = false;
-    form.value = { ...initialFormState, details: [ { product_id: '', location_id: '', quantity: 1, cost: 0, total: 0 } ] };
+    form.value = { 
+        ...initialFormState, 
+        details: [ { 
+            product_id: '', 
+            location_id: '', 
+            quantity: 1, 
+            cost: 0, 
+            total: 0,
+            received_quantity: 0,
+            remaining_quantity: 1
+        } ] 
+    };
     isFormVisible.value = true;
 };
 
 const hideForm = () => { isFormVisible.value = false; };
 
 const addDetail = () => {
-    form.value.details.push({ product_id: '', location_id: form.value.location_id, quantity: 1, cost: 0, total: 0 });
+    form.value.details.push({ 
+        product_id: '', 
+        location_id: form.value.location_id, 
+        quantity: 1, 
+        cost: 0, 
+        total: 0,
+        received_quantity: 0,
+        remaining_quantity: 1
+    });
 };
 const removeDetail = (index: number) => {
     form.value.details.splice(index, 1);
