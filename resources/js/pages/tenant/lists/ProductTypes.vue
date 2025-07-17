@@ -352,7 +352,7 @@ const resetForm = () => {
     id: undefined,
     type_name: '',
     active: true,
-    uiapproved: true,
+    approved: true,
     parent: null,
   };
   isEditing.value = false;
