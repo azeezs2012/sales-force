@@ -13,20 +13,30 @@
             v-model="form.name"
             placeholder="Name"
             class="bg-background"
+            required
           />
           <Input
             v-model="form.email"
             type="email"
             placeholder="Email"
             class="bg-background"
+            required
           />
           <Input
             v-model="form.password"
             type="password"
             placeholder="Password"
             class="bg-background"
+            :required="!isEditing"
           />
-          <Button @click="handleSubmit" class="w-fit whitespace-nowrap">
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="mb-6 flex gap-2">
+          <Button @click="resetForm" class="w-fit" variant="secondary">
+            Cancel
+          </Button>
+          <Button @click="handleSubmit" class="w-fit">
             {{ isEditing ? 'Update' : 'Create' }} User
           </Button>
         </div>
@@ -255,5 +265,19 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Add your styles here */
+/* Override browser autofill styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 00l(var(--background)) inset !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+  transition: background-color 500s ease-in-out 0s;
+}
+
+/* For Firefox */
+input:-moz-autofill {
+  background-color: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+}
 </style> 
