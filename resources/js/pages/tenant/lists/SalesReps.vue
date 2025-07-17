@@ -2,102 +2,132 @@
   <Head title="Sales Representatives" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div :class="{'dark': appearance === 'dark'}" class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 bg-white dark:bg-neutral-800">
-      <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border md:min-h-min">
-        <div class="absolute top-0 left-0 py-12">
-          <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-neutral-700 overflow-hidden shadow-sm sm:rounded-lg">
-              <div class="p-6 text-gray-900 dark:text-neutral-100">
-                <h2 class="text-2xl font-bold mb-4">Sales Representative Management</h2>
-
-                <!-- Form to create or update a sales representative -->
-                <form @submit.prevent="handleSubmit" class="mb-6">
-                  <div class="flex flex-wrap items-center gap-4">
-                    <div class="flex gap-4 w-full">
-                      <input type="text" v-model="form.code" placeholder="Sales Rep Code" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100 w-60" required />
-                      <input type="text" v-model="form.name" placeholder="Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100 w-60" required />
-                    </div>
-                    <div class="flex gap-4 w-full">
-                      <input type="email" v-model="form.email" placeholder="Email" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100 w-60" required />
-                      <div class="relative w-60">
-                        <Input :type="showPassword ? 'text' : 'password'" v-model="form.password" placeholder="Password" class="pr-10 w-full" required />
-                        <Button type="button" @click="togglePasswordVisibility" class="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5">
-                          👁️
-                        </Button>
-                      </div>
-                      <Button type="button" @click="generateStrongPassword" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">Generate Password</Button>
-                    </div>
-                    <div class="flex gap-4 w-full items-center">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100">
-                          {{ form.parent ? salesReps.find(salesRep => salesRep.id === form.parent)?.code : 'Select Parent Sales Rep' }}
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem @click="form.parent = null">None</DropdownMenuItem>
-                          <DropdownMenuItem v-for="salesRep in salesReps" :key="salesRep.id" @click="form.parent = salesRep.id">
-                            {{ ' '.repeat(getIndentationLevel(salesRep) * 2) + salesRep.code }}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <input type="checkbox" v-model="form.active" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Active
-                      <input type="checkbox" v-model="form.approved" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Approved
-                      
-                      <Button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} Sales Rep</Button>
-                    </div>
-                  </div>
-                </form>
-
-                <div class="overflow-x-auto">
-                  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-neutral-800">
-                      <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Code</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Email</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Active</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Created By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Updated By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-neutral-700 divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr v-for="salesRep in salesReps" :key="salesRep.id">
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          <span :style="{ paddingLeft: `${getIndentationLevel(salesRep)}rem` }">
-                            <span v-if="salesRep.parent">• </span>{{ salesRep.code }}
-                          </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ salesRep.user?.email }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ salesRep.active ? 'Yes' : 'No' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ salesRep.approved ? 'Yes' : 'No' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ salesRep.approver ? salesRep.approver.name : 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ salesRep.creator ? salesRep.creator.name : 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ salesRep.updater ? salesRep.updater.name : 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">Select Action</DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem @click="() => editSalesRep(salesRep)">Edit</DropdownMenuItem>
-                              <DropdownMenuItem @click="() => deleteSalesRep(salesRep.id?.toString() || '')">Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+    <Card class="flex h-full flex-1 flex-col bg-muted/10">
+      <CardHeader>
+        <CardTitle class="text-2xl">Sales Representative Management</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <!-- Create/Edit Form -->
+        <div class="mb-6 space-y-6">
+          <div class="grid grid-cols-4 gap-4">
+            <Input v-model="form.code" placeholder="Sales Rep Code" class="bg-background" required />
+            <Input v-model="form.name" placeholder="Name" class="bg-background" required />
+            <Input v-model="form.email" type="email" placeholder="Email" class="bg-background" required />
+            <Input :type="showPassword ? 'text' : 'password'" v-model="form.password" placeholder="Password" class="bg-background" :required="!isEditing" />
+          </div>
+          <div class="grid grid-cols-4 gap-4">
+            <Select v-model="form.parent">
+              <SelectTrigger class="bg-background">
+                <SelectValue placeholder="Select Parent Sales Rep" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem :value="null">None</SelectItem>
+                <SelectItem v-for="salesRep in availableParentSalesReps" :key="salesRep.id" :value="salesRep.id">
+                  {{ salesRep.code }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <div class="flex items-center gap-4">
+              <Label class="flex items-center gap-2">
+                <Switch v-model="form.active" />
+                Active
+              </Label>
+              <Label class="flex items-center gap-2">
+                <Switch v-model="form.approved" />
+                Approved
+              </Label>
             </div>
           </div>
+          <!-- Action Buttons -->
+          <div class="flex gap-2">
+            <Button @click="resetForm" class="w-fit" variant="secondary">Cancel</Button>
+            <Button @click="handleSubmit" class="w-fit">{{ isEditing ? 'Update' : 'Create' }} Sales Rep</Button>
+          </div>
+        </div>
+        
+        <!-- Sales Reps Table -->
+        <div class="rounded-md border bg-card">
+          <Table>
+            <TableHeader class="bg-muted/50">
+              <TableRow>
+                <TableHead class="uppercase">Code</TableHead>
+                <TableHead class="uppercase">Name</TableHead>
+                <TableHead class="uppercase">Email</TableHead>
+                <TableHead class="uppercase">Active</TableHead>
+                <TableHead class="uppercase">Approved</TableHead>
+                <TableHead class="uppercase">Approved By</TableHead>
+                <TableHead class="uppercase">Created By</TableHead>
+                <TableHead class="uppercase">Updated By</TableHead>
+                <TableHead class="w-[100px] uppercase">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="salesRep in salesReps" :key="salesRep.id" class="bg-background/50">
+                <TableCell>
+                  <span :style="{ paddingLeft: `${getIndentationLevel(salesRep)}rem` }">
+                    <span v-if="salesRep.parent">• </span>{{ salesRep.code }}
+                  </span>
+                </TableCell>
+                <TableCell>{{ salesRep.user?.name || salesRep.name }}</TableCell>
+                <TableCell>{{ salesRep.user?.email || salesRep.email }}</TableCell>
+                <TableCell>
+                  <Badge :variant="salesRep.active ? 'default' : 'secondary'">
+                    {{ salesRep.active ? 'Yes' : 'No' }}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge :variant="salesRep.approved ? 'default' : 'secondary'">
+                    {{ salesRep.approved ? 'Yes' : 'No' }}
+                  </Badge>
+                </TableCell>
+                <TableCell>{{ salesRep.approver ? salesRep.approver.name : 'N/A' }}</TableCell>
+                <TableCell>{{ salesRep.creator ? salesRep.creator.name : 'N/A' }}</TableCell>
+                <TableCell>{{ salesRep.updater ? salesRep.updater.name : 'N/A' }}</TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                      <Button variant="secondary" class="w-[130px]">Select Action</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" class="w-[130px]">
+                      <DropdownMenuItem @click="editSalesRep(salesRep)">
+                        <Pencil class="mr-2 h-4 w-4" />
+                        <span>Edit</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem @click="showConfirmDelete(salesRep)" class="text-destructive focus:text-destructive">
+                        <Trash class="mr-2 h-4 w-4" />
+                        <span>Delete</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+              <TableRow v-if="salesReps.length === 0">
+                <TableCell colspan="9" class="h-24 text-center text-muted-foreground">
+                  No sales representatives found.
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+
+    <!-- Custom Delete Confirmation Modal -->
+    <div v-if="showConfirmDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div class="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-foreground">Delete Sales Representative</h3>
+          <button @click="hideDeleteConfirm" class="text-muted-foreground hover:text-foreground transition-colors">
+            <X class="h-5 w-5" />
+          </button>
+        </div>
+        <p class="text-muted-foreground mb-6">
+          Are you sure you want to delete sales representative <strong class="text-foreground">{{ salesRepToDelete?.name || salesRepToDelete?.user?.name }}</strong>? This action cannot be undone.
+        </p>
+        <div class="flex justify-end gap-3">
+          <Button variant="outline" @click="hideDeleteConfirm">Cancel</Button>
+          <Button variant="destructive" @click="confirmDelete">Delete</Button>
         </div>
       </div>
     </div>
@@ -116,12 +146,45 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/components/ui/toast/use-toast';
-import { ref, onMounted, defineComponent, h, VNode } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import type { Ref } from 'vue';
 import { useAppearance } from '@/composables/useAppearance';
 import Input from '@/components/ui/input/Input.vue';
 import Button from '@/components/ui/button/Button.vue';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Pencil, Trash, X } from 'lucide-vue-next';
 
 const { toast } = useToast()
 
@@ -149,6 +212,8 @@ interface SalesRep {
 }
 
 const salesReps: Ref<SalesRep[]> = ref([]);
+const isEditing = ref(false);
+const salesRepToDelete: Ref<SalesRep | null> = ref(null);
 const form: Ref<Partial<SalesRep>> = ref({
   id: undefined,
   name: '',
@@ -159,19 +224,48 @@ const form: Ref<Partial<SalesRep>> = ref({
   approved: true,
   parent: undefined,
 });
-const isEditing = ref(false);
 
 const { appearance, updateAppearance } = useAppearance();
 
 const showPassword = ref(false);
 
-const fetchActiveApprovedSalesReps = async () => {
+// Computed property to filter out current sales rep from parent options
+const availableParentSalesReps = computed(() => {
+  if (!isEditing.value || !form.value.id) {
+    return salesReps.value;
+  }
+  return salesReps.value.filter(salesRep => salesRep.id !== form.value.id);
+});
+
+// Function to check for circular references
+const hasCircularReference = (parentId: number | null | undefined): boolean => {
+  if (!parentId || !form.value.id) return false;
+  
+  let currentParentId = parentId;
+  const visited = new Set<number>();
+  
+  while (currentParentId) {
+    if (visited.has(currentParentId)) return true;
+    if (currentParentId === form.value.id) return true;
+    
+    visited.add(currentParentId);
+    const parentSalesRep = salesReps.value.find(s => s.id === currentParentId);
+    currentParentId = parentSalesRep?.parent || null;
+  }
+  
+  return false;
+};
+
+const fetchSalesReps = async () => {
   try {
     const response = await axios.get('/api/sales-reps');
-    const allSalesReps = sortSalesRepsHierarchically(response.data);
-    salesReps.value = allSalesReps.filter((salesRep: SalesRep) => salesRep.active && salesRep.approved);
-  } catch (error) {
-    console.error('Failed to fetch active and approved sales representatives:', error);
+    salesReps.value = sortSalesRepsHierarchically(response.data);
+  } catch (error: any) {
+    toast({
+      title: 'Error',
+      description: error.response?.data?.message || 'Failed to fetch sales representatives',
+      variant: 'destructive',
+    });
   }
 };
 
@@ -192,108 +286,100 @@ const sortSalesRepsHierarchically = (salesReps: SalesRep[]): SalesRep[] => {
   return sortedSalesReps;
 };
 
-const fetchSalesReps = async () => {
-  try {
-    const response = await axios.get('/api/sales-reps');
-    const allSalesReps = response.data;
-    salesReps.value = sortSalesRepsHierarchically(allSalesReps);
-  } catch (error) {
-    console.error('Failed to fetch sales representatives:', error);
-  }
-};
-
 const handleSubmit = async () => {
-  try {
-    if (isEditing.value) {
-      await updateSalesRep();
-    } else {
-      await createSalesRep();
-    }
-  } catch (err) {
-    const error = err as any;
+  // Prevent circular reference
+  if (form.value.parent && hasCircularReference(form.value.parent)) {
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'An error occurred.',
+      description: 'A sales rep cannot be its own parent or create a circular reference.',
       variant: 'destructive',
     });
+    return;
   }
-};
 
-const createSalesRep = async () => {
   try {
-    await axios.post('/api/sales-reps', form.value);
-    fetchSalesReps();
+    if (isEditing.value) {
+      await axios.put(`/api/sales-reps/${form.value.id}`, form.value);
+      toast({
+        title: 'Success',
+        description: 'Sales representative updated successfully!',
+      });
+    } else {
+      await axios.post('/api/sales-reps', form.value);
+      toast({
+        title: 'Success',
+        description: 'Sales representative created successfully!',
+      });
+    }
+    await fetchSalesReps();
     resetForm();
-    toast({
-      title: 'Success',
-      description: 'Sales representative created successfully!',
-      variant: 'default',
-    });
-  } catch (err) {
-    const error = err as any;
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to create sales representative.',
-      variant: 'destructive', 
+      description: error.response?.data?.message || 'Operation failed',
+      variant: 'destructive',
     });
   }
 };
 
 const editSalesRep = (salesRep: SalesRep) => {
   form.value = {
-    ...salesRep,
-    name: salesRep.user?.name || '',
-    email: salesRep.user?.email || '',
+    id: salesRep.id,
+    name: salesRep.user?.name || salesRep.name || '',
+    code: salesRep.code || '',
+    email: salesRep.user?.email || salesRep.email || '',
+    password: '',
+    active: salesRep.active,
+    approved: salesRep.approved,
+    parent: salesRep.parent,
   };
   isEditing.value = true;
 };
 
-const updateSalesRep = async () => {
-  try {
-    if (form.value.id !== undefined) {
-      await axios.put(`/api/sales-reps/${form.value.id.toString()}`, {
-        ...form.value,
-        parent: form.value.parent !== null && form.value.parent !== undefined ? form.value.parent.toString() : null,
-      });
-    }
-    fetchSalesReps();
-    resetForm();
-    toast({
-      title: 'Success',
-      description: 'Sales representative updated successfully!',
-      variant: 'default',
-    });
-  } catch (err) {
-    const error = err as any;
-    toast({
-      title: 'Error',
-      description: error.response?.data?.message || 'Failed to update sales representative.',
-      variant: 'destructive',
-    });
-  }
+const showConfirmDeleteModal = ref(false);
+
+const showConfirmDelete = (salesRep: SalesRep) => {
+  salesRepToDelete.value = salesRep;
+  showConfirmDeleteModal.value = true;
 };
 
-const deleteSalesRep = async (id: string) => {
+const hideDeleteConfirm = () => {
+  showConfirmDeleteModal.value = false;
+  salesRepToDelete.value = null;
+};
+
+const confirmDelete = async () => {
+  if (!salesRepToDelete.value) return;
+  
   try {
-    await axios.delete(`/api/sales-reps/${id}`);
-    fetchSalesReps();
+    await axios.delete(`/api/sales-reps/${salesRepToDelete.value.id}`);
+    await fetchSalesReps();
     toast({
       title: 'Success',
       description: 'Sales representative deleted successfully!',
-      variant: 'default',
     });
-  } catch (err) {
-    const error = err as any;
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to delete sales representative.',
+      description: error.response?.data?.message || 'Failed to delete sales representative',
       variant: 'destructive',
     });
+  } finally {
+    hideDeleteConfirm();
   }
 };
 
 const resetForm = () => {
-  form.value = { id: undefined, code: '', active: true, approved: true, parent: undefined };
+  form.value = {
+    id: undefined,
+    name: '',
+    code: '',
+    email: '',
+    password: '',
+    active: true,
+    approved: true,
+    parent: undefined,
+  };
   isEditing.value = false;
 };
 
@@ -324,6 +410,8 @@ const getIndentationLevel = (salesRep: SalesRep): number => {
   }
   return level * 1.5; // Adjust multiplier for desired indentation
 };
+
+
 </script>
 
 <style scoped>

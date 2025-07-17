@@ -68,7 +68,7 @@
                         <span>Edit</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem @click="showDeleteDialog(user)" class="text-destructive focus:text-destructive">
+                      <DropdownMenuItem @click="showConfirmDelete(user)" class="text-destructive focus:text-destructive">
                         <Trash class="mr-2 h-4 w-4" />
                         <span>Delete</span>
                       </DropdownMenuItem>
@@ -87,21 +87,24 @@
       </CardContent>
     </Card>
 
-    <!-- Delete Confirmation Dialog -->
-    <Dialog :open="!!userToDelete" @update:open="closeDeleteDialog">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Delete User</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete this user? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="ghost" @click="closeDeleteDialog">Cancel</Button>
+    <!-- Custom Delete Confirmation Modal -->
+    <div v-if="showConfirmDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div class="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-foreground">Delete User</h3>
+          <button @click="hideDeleteConfirm" class="text-muted-foreground hover:text-foreground transition-colors">
+            <X class="h-5 w-5" />
+          </button>
+        </div>
+        <p class="text-muted-foreground mb-6">
+          Are you sure you want to delete user <strong class="text-foreground">{{ userToDelete?.name }}</strong>? This action cannot be undone.
+        </p>
+        <div class="flex justify-end gap-3">
+          <Button variant="outline" @click="hideDeleteConfirm">Cancel</Button>
           <Button variant="destructive" @click="confirmDelete">Delete</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   </AppLayout>
 </template>
 
@@ -112,21 +115,13 @@ import { ref, onMounted } from 'vue';
 import type { Ref } from 'vue';
 import axios from 'axios';
 import { useToast } from '@/components/ui/toast/use-toast';
-import { Pencil, Trash } from 'lucide-vue-next';
+import { Pencil, Trash, X } from 'lucide-vue-next';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -170,6 +165,18 @@ const form = ref({
   email: '',
   password: '',
 });
+
+const showConfirmDeleteModal = ref(false);
+
+const showConfirmDelete = (user: User) => {
+  userToDelete.value = user;
+  showConfirmDeleteModal.value = true;
+};
+
+const hideDeleteConfirm = () => {
+  showConfirmDeleteModal.value = false;
+  userToDelete.value = null;
+};
 
 const fetchUsers = async () => {
   try {
@@ -220,14 +227,6 @@ const editUser = (user: User) => {
   isEditing.value = true;
 };
 
-const showDeleteDialog = (user: User) => {
-  userToDelete.value = user;
-};
-
-const closeDeleteDialog = () => {
-  userToDelete.value = null;
-};
-
 const confirmDelete = async () => {
   if (!userToDelete.value) return;
   
@@ -245,7 +244,7 @@ const confirmDelete = async () => {
       variant: 'destructive',
     });
   } finally {
-    closeDeleteDialog();
+    hideDeleteConfirm();
   }
 };
 
