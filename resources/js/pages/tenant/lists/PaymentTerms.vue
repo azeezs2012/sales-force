@@ -2,76 +2,131 @@
   <Head title="Payment Terms" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div :class="{'dark': appearance === 'dark'}" class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 bg-white dark:bg-neutral-800">
-      <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border md:min-h-min">
-        <div class="absolute top-0 left-0 py-12">
-          <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-neutral-700 overflow-hidden shadow-sm sm:rounded-lg">
-              <div class="p-6 text-gray-900 dark:text-neutral-100">
-                <h2 class="text-2xl font-bold mb-4">Payment Term Management</h2>
-
-                <!-- Form to create or update a payment term -->
-                <form @submit.prevent="handleSubmit" class="mb-6">
-                  <div class="flex items-center gap-4">
-                    <input type="text" v-model="form.payment_term_name" placeholder="Term Name" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
-                    <input type="number" v-model="form.duration_count" placeholder="Duration Count" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required />
-                    <select v-model="form.duration_unit" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" required>
-                      <option value="days">Days</option>
-                      <option value="months">Months</option>
-                    </select>
-                    <input type="checkbox" v-model="form.active" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Active
-                    <input type="checkbox" v-model="form.approved" class="border rounded p-2 bg-white dark:bg-neutral-700 text-black dark:text-neutral-100" /> Approved
-                    <button type="submit" class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">{{ isEditing ? 'Update' : 'Create' }} Payment Term</button>
-                  </div>
-                </form>
-
-                <div class="overflow-x-auto">
-                  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-neutral-800">
-                      <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Term Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Duration</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Active</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Created By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Updated By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Approved By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-neutral-300 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-neutral-700 divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr v-for="term in paymentTerms" :key="term.id">
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ term.payment_term_name }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ term.duration_count }} {{ term.duration_unit }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ term.active ? 'Yes' : 'No' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">{{ term.approved ? 'Yes' : 'No' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ term.creator ? term.creator.name : 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ term.updater ? term.updater.name : 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-black dark:text-neutral-100">
-                          {{ term.approver ? term.approver.name : 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger class="bg-neutral-500 text-white px-4 py-2 rounded hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">Select Action</DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem @click="() => editPaymentTerm(term)">Edit</DropdownMenuItem>
-                              <DropdownMenuItem @click="() => deletePaymentTerm(term.id)">Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+    <Card class="flex h-full flex-1 flex-col bg-muted/10">
+      <CardHeader>
+        <CardTitle class="text-2xl font-bold mb-4">Payment Term Management</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <!-- Create/Edit Form -->
+        <div class="mb-6 space-y-6">
+          <div class="grid grid-cols-4 gap-4">
+            <Input
+              v-model="form.payment_term_name"
+              placeholder="Term Name"
+              class="bg-background"
+              required
+            />
+            <Input
+              v-model="form.duration_count"
+              type="number"
+              placeholder="Duration Count"
+              class="bg-background"
+              required
+            />
+            <Select v-model="form.duration_unit">
+              <SelectTrigger class="bg-background">
+                <SelectValue placeholder="Select Duration Unit" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="days">Days</SelectItem>
+                <SelectItem value="months">Months</SelectItem>
+              </SelectContent>
+            </Select>
+            <div class="flex items-center gap-4">
+              <Label class="flex items-center gap-2">
+                <Switch v-model="form.active" />
+                Active
+              </Label>
+              <Label class="flex items-center gap-2">
+                <Switch v-model="form.approved" />
+                Approved
+              </Label>
             </div>
           </div>
+          <!-- Action Buttons -->
+          <div class="flex gap-2">
+            <Button @click="resetForm" class="w-fit" variant="secondary">Cancel</Button>
+            <Button @click="handleSubmit" class="w-fit">{{ isEditing ? 'Update' : 'Create' }} Payment Term</Button>
+          </div>
+        </div>
+
+        <!-- Payment Terms Table -->
+        <div class="rounded-md border bg-card">
+          <Table>
+            <TableHeader class="bg-muted/50">
+              <TableRow>
+                <TableHead class="uppercase">Term Name</TableHead>
+                <TableHead class="uppercase">Duration</TableHead>
+                <TableHead class="uppercase">Active</TableHead>
+                <TableHead class="uppercase">Approved</TableHead>
+                <TableHead class="uppercase">Approved By</TableHead>
+                <TableHead class="uppercase">Created By</TableHead>
+                <TableHead class="uppercase">Updated By</TableHead>
+                <TableHead class="w-[100px] uppercase">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="term in paymentTerms" :key="term.id" class="bg-background/50">
+                <TableCell>{{ term.payment_term_name }}</TableCell>
+                <TableCell>{{ term.duration_count }} {{ term.duration_unit }}</TableCell>
+                <TableCell>
+                  <Badge :variant="term.active ? 'default' : 'secondary'">
+                    {{ term.active ? 'Yes' : 'No' }}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge :variant="term.approved ? 'default' : 'secondary'">
+                    {{ term.approved ? 'Yes' : 'No' }}
+                  </Badge>
+                </TableCell>
+                <TableCell>{{ term.approver ? term.approver.name : 'N/A' }}</TableCell>
+                <TableCell>{{ term.creator ? term.creator.name : 'N/A' }}</TableCell>
+                <TableCell>{{ term.updater ? term.updater.name : 'N/A' }}</TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                      <Button variant="secondary" class="w-[130px]">Select Action</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" class="w-[130px]">
+                      <DropdownMenuItem @click="editPaymentTerm(term)">
+                        <Pencil class="mr-2 h-4 w-4" />
+                        <span>Edit</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem @click="showConfirmDelete(term)" class="text-destructive focus:text-destructive">
+                        <Trash class="mr-2 h-4 w-4" />
+                        <span>Delete</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+              <TableRow v-if="paymentTerms.length === 0">
+                <TableCell colspan="8" class="h-24 text-center text-muted-foreground">
+                  No payment terms found.
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+
+    <!-- Custom Delete Confirmation Modal -->
+    <div v-if="showConfirmDeleteModal" class="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div class="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-foreground">Delete Payment Term</h3>
+          <button @click="hideDeleteConfirm" class="text-muted-foreground hover:text-foreground transition-colors">
+            <X class="h-5" />
+          </button>
+        </div>
+        <p class="text-muted-foreground mb-6">
+          Are you sure you want to delete payment term <strong class="text-foreground">{{ paymentTermToDelete?.payment_term_name }}</strong>? This action cannot be undone.
+        </p>
+        <div class="flex justify-end gap-3">
+          <Button variant="outline" @click="hideDeleteConfirm">Cancel</Button>
+          <Button variant="destructive" @click="confirmDelete">Delete</Button>
         </div>
       </div>
     </div>
@@ -81,21 +136,46 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
+import { ref, onMounted } from 'vue';
+import type { Ref } from 'vue';
+import axios from 'axios';
+import { useToast } from '@/components/ui/toast/use-toast';
+import { Pencil, Trash, X } from 'lucide-vue-next';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useToast } from '@/components/ui/toast/use-toast';
-import { ref, onMounted, defineComponent, h, VNode } from 'vue';
-import axios from 'axios';
-import type { Ref } from 'vue';
-import { useAppearance } from '@/composables/useAppearance';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-const { toast } = useToast()
+const { toast } = useToast();
 
 const breadcrumbs = [
   {
@@ -117,26 +197,27 @@ interface PaymentTerm {
 }
 
 const paymentTerms: Ref<PaymentTerm[]> = ref([]);
-const form: Ref<Partial<PaymentTerm>> = ref({
-  id: undefined,
+const isEditing = ref(false);
+const paymentTermToDelete: Ref<PaymentTerm | null> = ref(null);
+const showConfirmDeleteModal = ref(false);
+
+const form = ref({
+  id: undefined as string | undefined,
   payment_term_name: '',
   duration_count: 0,
   duration_unit: 'days',
   active: true,
-  approved: false,
+  approved: true,
 });
-const isEditing = ref(false);
-
-const { appearance, updateAppearance } = useAppearance();
 
 const fetchPaymentTerms = async () => {
   try {
     const response = await axios.get('/api/payment-terms');
     paymentTerms.value = response.data;
-  } catch (error) {
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: 'Failed to fetch payment terms.',
+      description: error.response?.data?.message || 'Failed to fetch payment terms',
       variant: 'destructive',
     });
   }
@@ -145,81 +226,69 @@ const fetchPaymentTerms = async () => {
 const handleSubmit = async () => {
   try {
     if (isEditing.value) {
-      await updatePaymentTerm();
+      await axios.put(`/api/payment-terms/${form.value.id}`, form.value);
+      toast({
+        title: 'Success',
+        description: 'Payment term updated successfully!',
+      });
     } else {
-      await createPaymentTerm();
+      await axios.post('/api/payment-terms', form.value);
+      toast({
+        title: 'Success',
+        description: 'Payment term created successfully!',
+      });
     }
-  } catch (err) {
-    const error = err as any;
-    toast({
-      title: 'Error',
-      description: error.response?.data?.message || 'An error occurred.',
-      variant: 'destructive',
-    });
-  }
-};
-
-const createPaymentTerm = async () => {
-  try {
-    await axios.post('/api/payment-terms', form.value);
-    fetchPaymentTerms();
+    await fetchPaymentTerms();
     resetForm();
-    toast({
-      title: 'Success',
-      description: 'Payment term created successfully!',
-      variant: 'default',
-    });
-  } catch (err) {
-    const error = err as any;
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to create payment term.',
+      description: error.response?.data?.message || 'Operation failed',
       variant: 'destructive',
     });
   }
 };
 
 const editPaymentTerm = (term: PaymentTerm) => {
-  form.value = { ...term };
+  form.value = {
+    id: term.id,
+    payment_term_name: term.payment_term_name,
+    duration_count: term.duration_count,
+    duration_unit: term.duration_unit,
+    active: term.active,
+    approved: term.approved,
+  };
   isEditing.value = true;
 };
 
-const updatePaymentTerm = async () => {
-  try {
-    await axios.put(`/api/payment-terms/${form.value.id}`, form.value);
-    fetchPaymentTerms();
-    resetForm();
-    toast({
-      title: 'Success',
-      description: 'Payment term updated successfully!',
-      variant: 'default',
-    });
-  } catch (err) {
-    const error = err as any;
-    toast({
-      title: 'Error',
-      description: error.response?.data?.message || 'Failed to update payment term.',
-      variant: 'destructive',
-    });
-  }
+const showConfirmDelete = (term: PaymentTerm) => {
+  paymentTermToDelete.value = term;
+  showConfirmDeleteModal.value = true;
 };
 
-const deletePaymentTerm = async (id: string) => {
+const hideDeleteConfirm = () => {
+  showConfirmDeleteModal.value = false;
+  paymentTermToDelete.value = null;
+};
+
+const confirmDelete = async () => {
+  if (!paymentTermToDelete.value) return;
+  
   try {
-    await axios.delete(`/api/payment-terms/${id}`);
-    fetchPaymentTerms();
+    await axios.delete(`/api/payment-terms/${paymentTermToDelete.value.id}`);
+    await fetchPaymentTerms();
     toast({
       title: 'Success',
       description: 'Payment term deleted successfully!',
-      variant: 'default',
     });
-  } catch (err) {
-    const error = err as any;
+  } catch (error: any) {
     toast({
       title: 'Error',
-      description: error.response?.data?.message || 'Failed to delete payment term.',
+      description: error.response?.data?.message || 'Failed to delete payment term',
       variant: 'destructive',
     });
+  } finally {
+    hideDeleteConfirm();
   }
 };
 
@@ -230,7 +299,7 @@ const resetForm = () => {
     duration_count: 0,
     duration_unit: 'days',
     active: true,
-    approved: false,
+    approved: true,
   };
   isEditing.value = false;
 };
