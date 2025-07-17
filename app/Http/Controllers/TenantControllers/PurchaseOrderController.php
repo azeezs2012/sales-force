@@ -148,6 +148,12 @@ class PurchaseOrderController extends Controller
                 }
             }
 
+            // After updating all details, recalculate received quantities and check PO status
+            foreach ($purchaseOrder->details as $poDetail) {
+                $this->updatePoDetailReceivedQuantity($poDetail->id);
+            }
+            $this->checkAndUpdatePoStatus($purchaseOrder->id);
+
             return $purchaseOrder;
         });
 
@@ -244,5 +250,53 @@ class PurchaseOrderController extends Controller
         }
 
         return ['valid' => true];
+    }
+
+    /**
+     * Update received quantity for a PO detail based on GRN details
+     */
+    private function updatePoDetailReceivedQuantity($poDetailId)
+    {
+        $poDetail = PurchaseOrderDetail::find($poDetailId);
+        if ($poDetail) {
+            $totalReceived = $poDetail->grnDetails()->sum('quantity');
+            // Ensure received quantity doesn't exceed ordered quantity
+            $totalReceived = min($totalReceived, $poDetail->quantity);
+            $poDetail->update(['received_quantity' => $totalReceived]);
+        }
+    }
+
+    /**
+     * Check and update PO status based on received quantities
+     */
+    private function checkAndUpdatePoStatus($poId)
+    {
+        $po = PurchaseOrder::with('details')->find($poId);
+        if ($po) {
+            $details = $po->details;
+            
+            // Check if all lines are fully received
+            $allFullyReceived = $details->every(function ($detail) {
+                return $detail->quantity == $detail->received_quantity;
+            });
+            
+            // Check if any lines have partial receipts
+            $hasPartialReceipts = $details->some(function ($detail) {
+                return $detail->received_quantity > 0 && $detail->received_quantity < $detail->quantity;
+            });
+            
+            // Determine new status
+            $newStatus = 'Open';
+            if ($allFullyReceived) {
+                $newStatus = 'Closed';
+            } elseif ($hasPartialReceipts) {
+                $newStatus = 'Partial';
+            }
+            
+            // Update status if it has changed
+            if ($po->po_status !== $newStatus) {
+                $po->update(['po_status' => $newStatus]);
+            }
+        }
     }
 } 

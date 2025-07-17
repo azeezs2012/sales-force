@@ -21,6 +21,37 @@ const { toast } = useToast();
 
 const breadcrumbs = [{ title: 'Goods Receive Notes', href: '/grns' }];
 
+// Interfaces
+interface User { id: string; name: string; }
+interface Supplier { id: string; user: User; }
+interface Location { id: string; location_name: string; }
+interface Product { id: string; product_name: string; }
+interface Account { id: string; account_name: string; }
+interface GrnDetail {
+    id?: string;
+    product_id: string;
+    location_id: string;
+    quantity: number;
+    cost: number;
+    total: number;
+    purchase_order_detail_id?: string;
+    product?: Product;
+    ordered_quantity?: number;
+}
+interface GrnSummary {
+    id: string;
+    grn_date: string;
+    supplier_id: string;
+    location_id: string;
+    ap_account_id: string;
+    grn_billing_address: string;
+    grn_delivery_address: string;
+    grn_status: string;
+    total_amount: number;
+    supplier?: Supplier;
+    details: GrnDetail[];
+}
+
 const grns = ref([]);
 const suppliers = ref([]);
 const locations = ref([]);
@@ -498,4 +529,15 @@ const confirmDelete = async () => {
             </div>
         </div>
     </AppLayout>
-</template> 
+</template>
+
+<style scoped>
+/* Fix autofill styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px hsl(var(--background)) inset !important;
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+}
+</style> 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, type Ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,40 @@ const { toast } = useToast();
 
 const breadcrumbs = [{ title: 'GRN Credits', href: '/grn-credits' }];
 
+// Interfaces
+interface User { id: string; name: string; }
+interface Supplier { id: string; user: User; }
+interface Location { id: string; location_name: string; }
+interface Product { id: string; product_name: string; }
+interface Account { id: string; account_name: string; }
+interface GrnCreditDetail {
+    id?: string;
+    product_id: string;
+    location_id: string;
+    quantity: number;
+    cost: number;
+    total: number;
+    grn_detail_id?: string;
+    product?: Product;
+    original_grn_quantity?: number;
+    credited_quantity?: number;
+    available_quantity?: number;
+}
+interface GrnCredit {
+    id: string;
+    grn_credit_date: string;
+    supplier_id: string;
+    location_id: string;
+    ap_account_id: string;
+    grn_credit_billing_address: string;
+    grn_credit_delivery_address: string;
+    grn_credit_status: string;
+    credit_reason: string;
+    total_amount: number;
+    supplier?: Supplier;
+    details: GrnCreditDetail[];
+}
+
 const grnCredits = ref([]);
 const grns = ref([]);
 const suppliers = ref([]);
@@ -34,6 +68,16 @@ const showConfirmDelete = ref(false);
 const grnCreditToDelete = ref(null);
 
 const statusFilter = ref<string>('all');
+
+// Add computed properties for supplier validation
+const selectedSupplierId = computed(() => {
+    const firstSelected = grnCredits.value.find(credit => selectedGrnCreditIds.value.includes(credit.id));
+    return firstSelected ? firstSelected.supplier_id : null;
+});
+
+const selectedGrnCreditIds = ref<string[]>([]);
+
+const canCreateGrnCredit = computed(() => selectedGrnCreditIds.value.length > 0);
 
 const form = useForm({
     id: null,
@@ -266,9 +310,9 @@ const confirmDelete = async () => {
 };
 
 const createGrnCreditFromSelectedGrns = () => {
-    // This function can be removed or kept for future use
-    // For now, we'll keep it but make it navigate to the GRN Credits page
-    router.get('/grn-credits');
+    if (!canCreateGrnCredit.value) return;
+    const grnIds = selectedGrnIds.value.join(',');
+    router.get(`/grn-credits?grn_ids=${grnIds}`);
 };
 
 const filteredGrnCredits = computed(() => {
@@ -302,7 +346,7 @@ const filteredGrnCredits = computed(() => {
                                 </SelectContent>
                             </Select>
                             <div class="flex items-center gap-2">
-                                <Button @click="createGrnCreditFromSelectedGrns">Create GRN Credit</Button>
+                                <Button @click="createGrnCreditFromSelectedGrns" :disabled="!canCreateGrnCredit">Create GRN Credit</Button>
                                 <Button @click="showCreateForm">Create New GRN Credit</Button>
                             </div>
                         </div>
@@ -312,6 +356,15 @@ const filteredGrnCredits = computed(() => {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead class="w-10">
+                                     <Checkbox @update:checked="(checked) => {
+                                        if (checked) {
+                                            selectedGrnCreditIds = filteredGrnCredits.map(credit => credit.id)
+                                        } else {
+                                            selectedGrnCreditIds = []
+                                        }
+                                    }" />
+                                </TableHead>
                                 <TableHead>Date</TableHead>
                                 <TableHead>GRN Credit #</TableHead>
                                 <TableHead>Supplier</TableHead>
@@ -322,6 +375,19 @@ const filteredGrnCredits = computed(() => {
                         </TableHeader>
                         <TableBody>
                             <TableRow v-for="credit in filteredGrnCredits" :key="credit.id">
+                                <TableCell>
+                                    <Checkbox
+                                        :checked="selectedGrnCreditIds.includes(credit.id)"
+                                        :disabled="selectedSupplierId && credit.supplier_id !== selectedSupplierId"
+                                        @update:checked="(checked) => {
+                                            if (checked) {
+                                                selectedGrnCreditIds.push(credit.id)
+                                            } else {
+                                                selectedGrnCreditIds = selectedGrnCreditIds.filter(id => id !== credit.id)
+                                            }
+                                        }"
+                                    />
+                                </TableCell>
                                 <TableCell>{{ formatDate(credit.grn_credit_date) }}</TableCell>
                                 <TableCell>GRN-CR-{{ credit.id }}</TableCell>
                                 <TableCell>{{ credit.supplier?.user?.name }}</TableCell>
@@ -345,7 +411,9 @@ const filteredGrnCredits = computed(() => {
                                 </TableCell>
                             </TableRow>
                             <TableRow v-if="filteredGrnCredits.length === 0">
-                                <TableCell colspan="6" class="h-24 text-center">No GRN credits found.</TableCell>
+                                <TableCell colspan="7" class="h-24 text-center">
+                                    {{ grnCredits.length === 0 ? 'No GRN credits found.' : 'No GRN credits match the selected filter.' }}
+                                </TableCell>
                             </TableRow>
                         </TableBody>
                     </Table>
@@ -495,4 +563,15 @@ const filteredGrnCredits = computed(() => {
             </div>
         </div>
     </AppLayout>
-</template> 
+</template>
+
+<style scoped>
+/* Fix autofill styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px hsl(var(--background)) inset !important;
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+}
+</style> 
