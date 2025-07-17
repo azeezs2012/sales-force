@@ -22,7 +22,7 @@
             <SelectContent>
               <SelectItem :value="null">None</SelectItem>
               <SelectItem
-                v-for="location in locations"
+                v-for="location in availableParentLocations"
                 :key="location.id"
                 :value="location.id"
               >
@@ -40,6 +40,13 @@
               Approved
             </Label>
           </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="mb-6 flex gap-2">
+          <Button @click="resetForm" class="w-fit" variant="secondary">
+            Cancel
+          </Button>
           <Button @click="handleSubmit" class="w-fit">
             {{ isEditing ? 'Update' : 'Create' }} Location
           </Button>
@@ -130,7 +137,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import type { Ref } from 'vue';
 import axios from 'axios';
 import { useToast } from '@/components/ui/toast/use-toast';
@@ -210,6 +217,29 @@ const form = ref({
   parent: null as string | null,
 });
 
+// Computed property to filter out current location from parent options
+const availableParentLocations = computed(() => {
+  if (!isEditing.value || !form.value.id) {
+    return locations.value;
+  }
+  return locations.value.filter(location => location.id !== form.value.id);
+});
+
+// Function to check for circular references
+const hasCircularReference = (parentId: string | null | undefined): boolean => {
+  if (!parentId || !form.value.id) return false;
+  let currentParentId = parentId;
+  const visited = new Set<string>();
+  while (currentParentId) {
+    if (visited.has(currentParentId)) return true;
+    if (currentParentId === form.value.id) return true;
+    visited.add(currentParentId);
+    const parentLocation = locations.value.find(l => l.id === currentParentId);
+    currentParentId = parentLocation?.parent;
+  }
+  return false;
+};
+
 const getIndentationLevel = (location: Location): number => {
   let level = 0;
   let currentLocation = location;
@@ -251,6 +281,15 @@ const fetchLocations = async () => {
 };
 
 const handleSubmit = async () => {
+  // Prevent circular reference
+  if (form.value.parent && hasCircularReference(form.value.parent)) {
+    toast({
+      title: 'Error',
+      description: 'A location cannot be its own parent or create a circular reference.',
+      variant: 'destructive',
+    });
+    return;
+  }
   try {
     if (isEditing.value) {
       await axios.put(`/api/locations/${form.value.id}`, form.value);

@@ -8,12 +8,24 @@
       </CardHeader>
       <CardContent>
         <!-- Create/Edit Form -->
-        <div class="mb-6 grid grid-cols-5 gap-4">
+        <div class="mb-6 grid grid-cols-4 gap-4">
           <Input
             v-model="form.branch_name"
             placeholder="Branch Name"
             class="bg-background"
+            required
           />
+          <Select v-model="form.parent">
+            <SelectTrigger class="bg-background">
+              <SelectValue placeholder="Select Parent Branch" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem :value="null">None</SelectItem>
+              <SelectItem v-for="branch in availableParentBranches" :key="branch.id" :value="branch.id">
+                {{ branch.branch_name }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
           <div class="flex items-center gap-4">
             <Label class="flex items-center gap-2">
               <Switch v-model="form.active" />
@@ -24,18 +36,14 @@
               Approved
             </Label>
           </div>
-          <Select v-model="form.parent">
-            <SelectTrigger class="bg-background">
-              <SelectValue :placeholder="'Select Parent Branch'" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem :value="null">None</SelectItem>
-              <SelectItem v-for="branch in branches" :key="branch.id" :value="branch.id">
-                {{ ' '.repeat(getIndentationLevel(branch) * 2) + branch.branch_name }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <Button @click="handleSubmit" class="w-fit whitespace-nowrap">
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="mb-6 flex gap-2">
+          <Button @click="resetForm" class="w-fit" variant="secondary">
+            Cancel
+          </Button>
+          <Button @click="handleSubmit" class="w-fit">
             {{ isEditing ? 'Update' : 'Create' }} Branch
           </Button>
         </div>
@@ -125,7 +133,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import type { Ref } from 'vue';
 import axios from 'axios';
 import { useToast } from '@/components/ui/toast/use-toast';
@@ -204,6 +212,33 @@ const form = ref({
   parent: undefined as string | undefined,
 });
 
+// Computed property to filter out current branch from parent options
+const availableParentBranches = computed(() => {
+  if (!isEditing.value || !form.value.id) {
+    return branches.value;
+  }
+  return branches.value.filter(branch => branch.id !== form.value.id);
+});
+
+// Function to check for circular references
+const hasCircularReference = (parentId: string | null | undefined): boolean => {
+  if (!parentId || !form.value.id) return false;
+  
+  let currentParentId = parentId;
+  const visited = new Set<string>();
+  
+  while (currentParentId) {
+    if (visited.has(currentParentId)) return true;
+    if (currentParentId === form.value.id) return true;
+    
+    visited.add(currentParentId);
+    const parentBranch = branches.value.find(b => b.id === currentParentId);
+    currentParentId = parentBranch?.parent;
+  }
+  
+  return false;
+};
+
 const getIndentationLevel = (branch: Branch): number => {
   let level = 0;
   let currentBranch = branch;
@@ -245,6 +280,15 @@ const sortBranchesHierarchically = (branchList: Branch[]): Branch[] => {
 };
 
 const handleSubmit = async () => {
+  // Prevent circular reference
+  if (form.value.parent && hasCircularReference(form.value.parent)) {
+    toast({
+      title: 'Error',
+      description: 'A branch cannot be its own parent or create a circular reference.',
+      variant: 'destructive',
+    });
+    return;
+  }
   try {
     if (isEditing.value) {
       await axios.put(`/api/branches/${form.value.id}`, form.value);
