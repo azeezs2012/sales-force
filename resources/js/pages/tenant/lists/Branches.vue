@@ -8,12 +8,24 @@
       </CardHeader>
       <CardContent>
         <!-- Create/Edit Form -->
-        <div class="mb-6 grid grid-cols-5 gap-4">
+        <div class="mb-6 grid grid-cols-4 gap-4">
           <Input
             v-model="form.branch_name"
             placeholder="Branch Name"
             class="bg-background"
+            required
           />
+          <Select v-model="form.parent">
+            <SelectTrigger class="bg-background">
+              <SelectValue placeholder="Select Parent Branch" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem :value="null">None</SelectItem>
+              <SelectItem v-for="branch in availableParentBranches" :key="branch.id" :value="branch.id">
+                {{ branch.branch_name }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
           <div class="flex items-center gap-4">
             <Label class="flex items-center gap-2">
               <Switch v-model="form.active" />
@@ -24,18 +36,14 @@
               Approved
             </Label>
           </div>
-          <Select v-model="form.parent">
-            <SelectTrigger class="bg-background">
-              <SelectValue :placeholder="'Select Parent Branch'" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem :value="null">None</SelectItem>
-              <SelectItem v-for="branch in branches" :key="branch.id" :value="branch.id">
-                {{ ' '.repeat(getIndentationLevel(branch) * 2) + branch.branch_name }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <Button @click="handleSubmit" class="w-fit whitespace-nowrap">
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="mb-6 flex gap-2">
+          <Button @click="resetForm" class="w-fit" variant="secondary">
+            Cancel
+          </Button>
+          <Button @click="handleSubmit" class="w-fit">
             {{ isEditing ? 'Update' : 'Create' }} Branch
           </Button>
         </div>
@@ -85,7 +93,7 @@
                         <span>Edit</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem @click="showDeleteDialog(branch)" class="text-destructive focus:text-destructive">
+                      <DropdownMenuItem @click="showConfirmDelete(branch)" class="text-destructive focus:text-destructive">
                         <Trash class="mr-2 h-4 w-4" />
                         <span>Delete</span>
                       </DropdownMenuItem>
@@ -104,32 +112,35 @@
       </CardContent>
     </Card>
 
-    <!-- Delete Confirmation Dialog -->
-    <Dialog :open="!!branchToDelete" @update:open="closeDeleteDialog">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Delete Branch</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete this branch? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="ghost" @click="closeDeleteDialog">Cancel</Button>
+    <!-- Custom Delete Confirmation Modal -->
+    <div v-if="showConfirmDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div class="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-foreground">Delete Branch</h3>
+          <button @click="hideDeleteConfirm" class="text-muted-foreground hover:text-foreground transition-colors">
+            <X class="h-5 w-5" />
+          </button>
+        </div>
+        <p class="text-muted-foreground mb-6">
+          Are you sure you want to delete branch <strong class="text-foreground">{{ branchToDelete?.branch_name }}</strong>? This action cannot be undone.
+        </p>
+        <div class="flex justify-end gap-3">
+          <Button variant="outline" @click="hideDeleteConfirm">Cancel</Button>
           <Button variant="destructive" @click="confirmDelete">Delete</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import type { Ref } from 'vue';
 import axios from 'axios';
 import { useToast } from '@/components/ui/toast/use-toast';
-import { Pencil, Trash } from 'lucide-vue-next';
+import { Pencil, Trash, X } from 'lucide-vue-next';
 import {
   Card,
   CardContent,
@@ -204,6 +215,33 @@ const form = ref({
   parent: undefined as string | undefined,
 });
 
+// Computed property to filter out current branch from parent options
+const availableParentBranches = computed(() => {
+  if (!isEditing.value || !form.value.id) {
+    return branches.value;
+  }
+  return branches.value.filter(branch => branch.id !== form.value.id);
+});
+
+// Function to check for circular references
+const hasCircularReference = (parentId: string | null | undefined): boolean => {
+  if (!parentId || !form.value.id) return false;
+  
+  let currentParentId = parentId;
+  const visited = new Set<string>();
+  
+  while (currentParentId) {
+    if (visited.has(currentParentId)) return true;
+    if (currentParentId === form.value.id) return true;
+    
+    visited.add(currentParentId);
+    const parentBranch = branches.value.find(b => b.id === currentParentId);
+    currentParentId = parentBranch?.parent;
+  }
+  
+  return false;
+};
+
 const getIndentationLevel = (branch: Branch): number => {
   let level = 0;
   let currentBranch = branch;
@@ -245,6 +283,15 @@ const sortBranchesHierarchically = (branchList: Branch[]): Branch[] => {
 };
 
 const handleSubmit = async () => {
+  // Prevent circular reference
+  if (form.value.parent && hasCircularReference(form.value.parent)) {
+    toast({
+      title: 'Error',
+      description: 'A branch cannot be its own parent or create a circular reference.',
+      variant: 'destructive',
+    });
+    return;
+  }
   try {
     if (isEditing.value) {
       await axios.put(`/api/branches/${form.value.id}`, form.value);
@@ -281,11 +328,15 @@ const editBranch = (branch: Branch) => {
   isEditing.value = true;
 };
 
-const showDeleteDialog = (branch: Branch) => {
+const showConfirmDeleteModal = ref(false);
+
+const showConfirmDelete = (branch) => {
   branchToDelete.value = branch;
+  showConfirmDeleteModal.value = true;
 };
 
-const closeDeleteDialog = () => {
+const hideDeleteConfirm = () => {
+  showConfirmDeleteModal.value = false;
   branchToDelete.value = null;
 };
 
@@ -306,7 +357,7 @@ const confirmDelete = async () => {
       variant: 'destructive',
     });
   } finally {
-    closeDeleteDialog();
+    hideDeleteConfirm();
   }
 };
 

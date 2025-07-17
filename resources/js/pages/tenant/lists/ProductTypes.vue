@@ -23,7 +23,7 @@
               <SelectContent>
                 <SelectItem :value="null">None</SelectItem>
                 <SelectItem
-                  v-for="type in productTypes"
+                  v-for="type in availableParentProductTypes"
                   :key="type.id"
                   :value="type.id"
                 >
@@ -41,9 +41,11 @@
                 Approved
               </Label>
             </div>
-            <Button @click="handleSubmit" class="w-fit">
-              {{ isEditing ? 'Update' : 'Create' }} Product Type
-            </Button>
+          </div>
+          <!-- Action Buttons -->
+          <div class="flex gap-2">
+            <Button @click="resetForm" class="w-fit" variant="secondary">Cancel</Button>
+            <Button @click="handleSubmit" class="w-fit">{{ isEditing ? 'Update' : 'Create' }} Product Type</Button>
           </div>
         </div>
 
@@ -92,7 +94,7 @@
                         <span>Edit</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem @click="showDeleteDialog(productType)" class="text-destructive focus:text-destructive">
+                      <DropdownMenuItem @click="showConfirmDelete(productType)" class="text-destructive focus:text-destructive">
                         <Trash class="mr-2 h-4 w-4" />
                         <span>Delete</span>
                       </DropdownMenuItem>
@@ -111,32 +113,35 @@
       </CardContent>
     </Card>
 
-    <!-- Delete Confirmation Dialog -->
-    <Dialog :open="!!productTypeToDelete" @update:open="closeDeleteDialog">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Delete Product Type</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete this product type? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="ghost" @click="closeDeleteDialog">Cancel</Button>
+    <!-- Custom Delete Confirmation Modal -->
+    <div v-if="showConfirmDeleteModal" class="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div class="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-foreground">Delete Product Type</h3>
+          <button @click="hideDeleteConfirm" class="text-muted-foreground hover:text-foreground transition-colors">
+            <X class="h-5 w-5" />
+          </button>
+        </div>
+        <p class="text-muted-foreground mb-6">
+          Are you sure you want to delete product type <strong class="text-foreground">{{ productTypeToDelete?.type_name }}</strong>? This action cannot be undone.
+        </p>
+        <div class="flex justify-end gap-3">
+          <Button variant="outline" @click="hideDeleteConfirm">Cancel</Button>
           <Button variant="destructive" @click="confirmDelete">Delete</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import type { Ref } from 'vue';
 import axios from 'axios';
 import { useToast } from '@/components/ui/toast/use-toast';
-import { Pencil, Trash } from 'lucide-vue-next';
+import { Pencil, Trash, X } from 'lucide-vue-next';
 import {
   Card,
   CardContent,
@@ -202,14 +207,34 @@ interface ProductType {
 const productTypes: Ref<ProductType[]> = ref([]);
 const isEditing = ref(false);
 const productTypeToDelete: Ref<ProductType | null> = ref(null);
+const showConfirmDeleteModal = ref(false);
 
 const form = ref({
   id: undefined as string | undefined,
   type_name: '',
   active: true,
-  approved: false,
-  parent: null as string | null,
+  approved: true,
+  parent: undefined as string | undefined | null,
 });
+
+const availableParentProductTypes = computed(() => {
+  if (!isEditing.value || !form.value.id) return productTypes.value;
+  return productTypes.value.filter(type => type.id !== form.value.id);
+});
+
+function hasCircularReference(parentId: string | null | undefined): boolean {
+  if (!parentId || !form.value.id) return false;
+  let currentParentId = parentId;
+  const visited = new Set<string>();
+  while (currentParentId) {
+    if (visited.has(currentParentId)) return true;
+    if (currentParentId === form.value.id) return true;
+    visited.add(currentParentId);
+    const parentType = productTypes.value.find(t => t.id === currentParentId);
+    currentParentId = parentType?.parent || null;
+  }
+  return false;
+}
 
 const sortProductTypesHierarchically = (types: ProductType[]): ProductType[] => {
   const typeMap = new Map<string, ProductType>();
@@ -252,19 +277,22 @@ const fetchProductTypes = async () => {
 };
 
 const handleSubmit = async () => {
+  // Prevent circular reference
+  if (form.value.parent && hasCircularReference(form.value.parent)) {
+    toast({
+      title: 'Error',
+      description: 'A product type cannot be its own parent or create a circular reference.',
+      variant: 'destructive',
+    });
+    return;
+  }
   try {
     if (isEditing.value) {
       await axios.put(`/api/product-types/${form.value.id}`, form.value);
-      toast({
-        title: 'Success',
-        description: 'Product type updated successfully!',
-      });
+      toast({ title: 'Success', description: 'Product type updated successfully!' });
     } else {
       await axios.post('/api/product-types', form.value);
-      toast({
-        title: 'Success',
-        description: 'Product type created successfully!',
-      });
+      toast({ title: 'Success', description: 'Product type created successfully!' });
     }
     await fetchProductTypes();
     resetForm();
@@ -288,11 +316,13 @@ const editProductType = (productType: ProductType) => {
   isEditing.value = true;
 };
 
-const showDeleteDialog = (productType: ProductType) => {
+const showConfirmDelete = (productType: ProductType) => {
   productTypeToDelete.value = productType;
+  showConfirmDeleteModal.value = true;
 };
 
-const closeDeleteDialog = () => {
+const hideDeleteConfirm = () => {
+  showConfirmDeleteModal.value = false;
   productTypeToDelete.value = null;
 };
 
@@ -313,7 +343,7 @@ const confirmDelete = async () => {
       variant: 'destructive',
     });
   } finally {
-    closeDeleteDialog();
+    hideDeleteConfirm();
   }
 };
 
@@ -322,7 +352,7 @@ const resetForm = () => {
     id: undefined,
     type_name: '',
     active: true,
-    approved: false,
+    approved: true,
     parent: null,
   };
   isEditing.value = false;

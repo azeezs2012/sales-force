@@ -79,6 +79,11 @@ class LocationController extends Controller
             return response()->json($validator->errors(), 422);
         }
 
+        // Check for circular reference
+        if ($request->parent && $this->hasCircularReference($id, $request->parent)) {
+            return response()->json(['error' => 'Cannot set parent to create a circular reference.'], 422);
+        }
+
         if ($request->parent && !$this->hasValidParentHierarchy($request->parent)) {
             return response()->json(['error' => 'Parent hierarchy exceeds maximum depth of 5.'], 422);
         }
@@ -135,5 +140,41 @@ class LocationController extends Controller
         }
 
         return $depth < 5;
+    }
+
+    /**
+     * Check for circular reference when setting a parent.
+     *
+     * @param  int  $locationId
+     * @param  int  $parentId
+     * @return bool
+     */
+    private function hasCircularReference($locationId, $parentId)
+    {
+        // A location cannot be its own parent
+        if ($locationId == $parentId) {
+            return true;
+        }
+
+        $visited = [];
+        $currentParentId = $parentId;
+
+        while ($currentParentId) {
+            // Check if we've already visited this parent (circular reference)
+            if (in_array($currentParentId, $visited)) {
+                return true;
+            }
+
+            // Check if the current parent is the location we're trying to update
+            if ($currentParentId == $locationId) {
+                return true;
+            }
+
+            $visited[] = $currentParentId;
+            $parentLocation = Location::find($currentParentId);
+            $currentParentId = $parentLocation ? $parentLocation->parent : null;
+        }
+
+        return false;
     }
 } 

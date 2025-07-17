@@ -13,20 +13,40 @@
             v-model="form.name"
             placeholder="Name"
             class="bg-background"
+            required
           />
           <Input
             v-model="form.email"
             type="email"
             placeholder="Email"
             class="bg-background"
+            required
           />
-          <Input
-            v-model="form.password"
-            type="password"
-            placeholder="Password"
-            class="bg-background"
-          />
-          <Button @click="handleSubmit" class="w-fit whitespace-nowrap">
+          <div class="relative">
+            <Input
+              v-model="form.password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="Password"
+              class="bg-background pr-10"
+              :required="!isEditing"
+            />
+            <button
+              type="button"
+              @click="togglePasswordVisibility"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <Eye v-if="!showPassword" class="h-4 w-4" />
+              <EyeOff v-else class="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="mb-6 flex gap-2">
+          <Button @click="resetForm" class="w-fit" variant="secondary">
+            Cancel
+          </Button>
+          <Button @click="handleSubmit" class="w-fit">
             {{ isEditing ? 'Update' : 'Create' }} User
           </Button>
         </div>
@@ -58,7 +78,7 @@
                         <span>Edit</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem @click="showDeleteDialog(user)" class="text-destructive focus:text-destructive">
+                      <DropdownMenuItem @click="showConfirmDelete(user)" class="text-destructive focus:text-destructive">
                         <Trash class="mr-2 h-4 w-4" />
                         <span>Delete</span>
                       </DropdownMenuItem>
@@ -77,21 +97,24 @@
       </CardContent>
     </Card>
 
-    <!-- Delete Confirmation Dialog -->
-    <Dialog :open="!!userToDelete" @update:open="closeDeleteDialog">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Delete User</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete this user? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="ghost" @click="closeDeleteDialog">Cancel</Button>
+    <!-- Custom Delete Confirmation Modal -->
+    <div v-if="showConfirmDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div class="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-foreground">Delete User</h3>
+          <button @click="hideDeleteConfirm" class="text-muted-foreground hover:text-foreground transition-colors">
+            <X class="h-5 w-5" />
+          </button>
+        </div>
+        <p class="text-muted-foreground mb-6">
+          Are you sure you want to delete user <strong class="text-foreground">{{ userToDelete?.name }}</strong>? This action cannot be undone.
+        </p>
+        <div class="flex justify-end gap-3">
+          <Button variant="outline" @click="hideDeleteConfirm">Cancel</Button>
           <Button variant="destructive" @click="confirmDelete">Delete</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   </AppLayout>
 </template>
 
@@ -102,21 +125,13 @@ import { ref, onMounted } from 'vue';
 import type { Ref } from 'vue';
 import axios from 'axios';
 import { useToast } from '@/components/ui/toast/use-toast';
-import { Pencil, Trash } from 'lucide-vue-next';
+import { Pencil, Trash, X, Eye, EyeOff } from 'lucide-vue-next';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -160,6 +175,23 @@ const form = ref({
   email: '',
   password: '',
 });
+
+const showConfirmDeleteModal = ref(false);
+const showPassword = ref(false);
+
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value;
+};
+
+const showConfirmDelete = (user: User) => {
+  userToDelete.value = user;
+  showConfirmDeleteModal.value = true;
+};
+
+const hideDeleteConfirm = () => {
+  showConfirmDeleteModal.value = false;
+  userToDelete.value = null;
+};
 
 const fetchUsers = async () => {
   try {
@@ -210,14 +242,6 @@ const editUser = (user: User) => {
   isEditing.value = true;
 };
 
-const showDeleteDialog = (user: User) => {
-  userToDelete.value = user;
-};
-
-const closeDeleteDialog = () => {
-  userToDelete.value = null;
-};
-
 const confirmDelete = async () => {
   if (!userToDelete.value) return;
   
@@ -235,7 +259,7 @@ const confirmDelete = async () => {
       variant: 'destructive',
     });
   } finally {
-    closeDeleteDialog();
+    hideDeleteConfirm();
   }
 };
 
@@ -255,5 +279,19 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Add your styles here */
+/* Override browser autofill styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 00l(var(--background)) inset !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+  transition: background-color 500s ease-in-out 0s;
+}
+
+/* For Firefox */
+input:-moz-autofill {
+  background-color: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+}
 </style> 

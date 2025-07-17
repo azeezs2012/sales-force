@@ -4,10 +4,10 @@ import NavMain from '@/components/NavMain.vue';
 import TenantNavUser from '@/components/TenantNavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarGroup } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { BookOpen, Folder, LayoutGrid, ChevronDown, Building2, Users, MapPin, ShoppingCart, CreditCard, Package, Boxes, FileText, Truck, BookOpenText, ShoppingBag } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
-import { ref } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 const mainNavItems: NavItem[] = [
     {
@@ -155,6 +155,31 @@ const footerNavItems: NavItem[] = [
 ];
 
 const expandedGroups = ref<string[]>([]);
+
+const page = usePage();
+
+// Function to find which group contains the current page
+const findGroupForCurrentPage = (currentPath: string): string | null => {
+    for (const [groupKey, group] of Object.entries(listNavItems)) {
+        if (group.items.some(item => item.href === currentPath)) {
+            return groupKey;
+        }
+    }
+    return null;
+};
+
+// Computed property to get the current page's group
+const currentPageGroup = computed(() => {
+    return findGroupForCurrentPage(page.url);
+});
+
+// Watch for route changes and auto-expand the relevant group
+watch(() => page.url, (newUrl) => {
+    const groupKey = findGroupForCurrentPage(newUrl);
+    if (groupKey && !expandedGroups.value.includes(groupKey)) {
+        expandedGroups.value.push(groupKey);
+    }
+}, { immediate: true });
 
 const toggleGroup = (groupKey: string) => {
     const index = expandedGroups.value.indexOf(groupKey);

@@ -22,7 +22,7 @@
             <SelectContent>
               <SelectItem :value="null">None</SelectItem>
               <SelectItem
-                v-for="location in locations"
+                v-for="location in availableParentLocations"
                 :key="location.id"
                 :value="location.id"
               >
@@ -40,6 +40,13 @@
               Approved
             </Label>
           </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="mb-6 flex gap-2">
+          <Button @click="resetForm" class="w-fit" variant="secondary">
+            Cancel
+          </Button>
           <Button @click="handleSubmit" class="w-fit">
             {{ isEditing ? 'Update' : 'Create' }} Location
           </Button>
@@ -90,7 +97,7 @@
                         <span>Edit</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem @click="showDeleteDialog(location)" class="text-destructive focus:text-destructive">
+                      <DropdownMenuItem @click="showConfirmDelete(location)" class="text-destructive focus:text-destructive">
                         <Trash class="mr-2 h-4 w-4" />
                         <span>Delete</span>
                       </DropdownMenuItem>
@@ -109,32 +116,35 @@
       </CardContent>
     </Card>
 
-    <!-- Delete Confirmation Dialog -->
-    <Dialog :open="!!locationToDelete" @update:open="closeDeleteDialog">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Delete Location</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete this location? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="ghost" @click="closeDeleteDialog">Cancel</Button>
+    <!-- Custom Delete Confirmation Modal -->
+    <div v-if="showConfirmDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div class="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-foreground">Delete Location</h3>
+          <button @click="hideDeleteConfirm" class="text-muted-foreground hover:text-foreground transition-colors">
+            <X class="h-5 w-5" />
+          </button>
+        </div>
+        <p class="text-muted-foreground mb-6">
+          Are you sure you want to delete location <strong class="text-foreground">{{ locationToDelete?.location_name }}</strong>? This action cannot be undone.
+        </p>
+        <div class="flex justify-end gap-3">
+          <Button variant="outline" @click="hideDeleteConfirm">Cancel</Button>
           <Button variant="destructive" @click="confirmDelete">Delete</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import type { Ref } from 'vue';
 import axios from 'axios';
 import { useToast } from '@/components/ui/toast/use-toast';
-import { Pencil, Trash } from 'lucide-vue-next';
+import { Pencil, Trash, X } from 'lucide-vue-next';
 import {
   Card,
   CardContent,
@@ -201,6 +211,7 @@ interface Location {
 const locations: Ref<Location[]> = ref([]);
 const isEditing = ref(false);
 const locationToDelete: Ref<Location | null> = ref(null);
+const showConfirmDeleteModal = ref(false);
 
 const form = ref({
   id: undefined as string | undefined,
@@ -209,6 +220,29 @@ const form = ref({
   approved: true,
   parent: null as string | null,
 });
+
+// Computed property to filter out current location from parent options
+const availableParentLocations = computed(() => {
+  if (!isEditing.value || !form.value.id) {
+    return locations.value;
+  }
+  return locations.value.filter(location => location.id !== form.value.id);
+});
+
+// Function to check for circular references
+const hasCircularReference = (parentId: string | null | undefined): boolean => {
+  if (!parentId || !form.value.id) return false;
+  let currentParentId = parentId;
+  const visited = new Set<string>();
+  while (currentParentId) {
+    if (visited.has(currentParentId)) return true;
+    if (currentParentId === form.value.id) return true;
+    visited.add(currentParentId);
+    const parentLocation = locations.value.find(l => l.id === currentParentId);
+    currentParentId = parentLocation?.parent;
+  }
+  return false;
+};
 
 const getIndentationLevel = (location: Location): number => {
   let level = 0;
@@ -251,6 +285,15 @@ const fetchLocations = async () => {
 };
 
 const handleSubmit = async () => {
+  // Prevent circular reference
+  if (form.value.parent && hasCircularReference(form.value.parent)) {
+    toast({
+      title: 'Error',
+      description: 'A location cannot be its own parent or create a circular reference.',
+      variant: 'destructive',
+    });
+    return;
+  }
   try {
     if (isEditing.value) {
       await axios.put(`/api/locations/${form.value.id}`, form.value);
@@ -287,11 +330,13 @@ const editLocation = (location: Location) => {
   isEditing.value = true;
 };
 
-const showDeleteDialog = (location: Location) => {
+const showConfirmDelete = (location: Location) => {
   locationToDelete.value = location;
+  showConfirmDeleteModal.value = true;
 };
 
-const closeDeleteDialog = () => {
+const hideDeleteConfirm = () => {
+  showConfirmDeleteModal.value = false;
   locationToDelete.value = null;
 };
 
@@ -312,7 +357,7 @@ const confirmDelete = async () => {
       variant: 'destructive',
     });
   } finally {
-    closeDeleteDialog();
+    hideDeleteConfirm();
   }
 };
 

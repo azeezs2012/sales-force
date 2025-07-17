@@ -23,7 +23,7 @@
               <SelectContent>
                 <SelectItem :value="null">None</SelectItem>
                 <SelectItem
-                  v-for="type in customerTypes"
+                  v-for="type in availableParentCustomerTypes"
                   :key="type.id"
                   :value="type.id"
                 >
@@ -41,6 +41,12 @@
                 Approved
               </Label>
             </div>
+          </div>
+          <!-- Action Buttons -->
+          <div class="flex gap-2">
+            <Button @click="resetForm" class="w-fit" variant="secondary">
+              Cancel
+            </Button>
             <Button @click="handleSubmit" class="w-fit">
               {{ isEditing ? 'Update' : 'Create' }} Customer Type
             </Button>
@@ -92,7 +98,7 @@
                         <span>Edit</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem @click="showDeleteDialog(customerType)" class="text-destructive focus:text-destructive">
+                      <DropdownMenuItem @click="showConfirmDelete(customerType)" class="text-destructive focus:text-destructive">
                         <Trash class="mr-2 h-4 w-4" />
                         <span>Delete</span>
                       </DropdownMenuItem>
@@ -111,32 +117,35 @@
       </CardContent>
     </Card>
 
-    <!-- Delete Confirmation Dialog -->
-    <Dialog :open="!!customerTypeToDelete" @update:open="closeDeleteDialog">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Delete Customer Type</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete this customer type? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="ghost" @click="closeDeleteDialog">Cancel</Button>
+    <!-- Custom Delete Confirmation Modal -->
+    <div v-if="showConfirmDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div class="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-foreground">Delete Customer Type</h3>
+          <button @click="hideDeleteConfirm" class="text-muted-foreground hover:text-foreground transition-colors">
+            <X class="h-5 w-5" />
+          </button>
+        </div>
+        <p class="text-muted-foreground mb-6">
+          Are you sure you want to delete customer type <strong class="text-foreground">{{ customerTypeToDelete?.type_name }}</strong>? This action cannot be undone.
+        </p>
+        <div class="flex justify-end gap-3">
+          <Button variant="outline" @click="hideDeleteConfirm">Cancel</Button>
           <Button variant="destructive" @click="confirmDelete">Delete</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import type { Ref } from 'vue';
 import axios from 'axios';
 import { useToast } from '@/components/ui/toast/use-toast';
-import { Pencil, Trash } from 'lucide-vue-next';
+import { Pencil, Trash, X } from 'lucide-vue-next';
 import {
   Card,
   CardContent,
@@ -202,6 +211,7 @@ interface CustomerType {
 const customerTypes: Ref<CustomerType[]> = ref([]);
 const isEditing = ref(false);
 const customerTypeToDelete: Ref<CustomerType | null> = ref(null);
+const showConfirmDeleteModal = ref(false);
 
 const form = ref({
   id: undefined as string | undefined,
@@ -210,6 +220,33 @@ const form = ref({
   approved: true,
   parent: null as string | null,
 });
+
+// Computed property to filter out current customer type from parent options
+const availableParentCustomerTypes = computed(() => {
+  if (!isEditing.value || !form.value.id) {
+    return customerTypes.value;
+  }
+  return customerTypes.value.filter(type => type.id !== form.value.id);
+});
+
+// Function to check for circular references
+const hasCircularReference = (parentId: string | null | undefined): boolean => {
+  if (!parentId || !form.value.id) return false;
+  
+  let currentParentId = parentId;
+  const visited = new Set<string>();
+  
+  while (currentParentId) {
+    if (visited.has(currentParentId)) return true;
+    if (currentParentId === form.value.id) return true;
+    
+    visited.add(currentParentId);
+    const parentType = customerTypes.value.find(t => t.id === currentParentId);
+    currentParentId = parentType?.parent;
+  }
+  
+  return false;
+};
 
 const sortCustomerTypesHierarchically = (types: CustomerType[]): CustomerType[] => {
   const typeMap = new Map<string, CustomerType>();
@@ -252,6 +289,16 @@ const fetchCustomerTypes = async () => {
 };
 
 const handleSubmit = async () => {
+  // Prevent circular reference
+  if (form.value.parent && hasCircularReference(form.value.parent)) {
+    toast({
+      title: 'Error',
+      description: 'A customer type cannot be its own parent or create a circular reference.',
+      variant: 'destructive',
+    });
+    return;
+  }
+  
   try {
     if (isEditing.value) {
       await axios.put(`/api/customer-types/${form.value.id}`, form.value);
@@ -288,11 +335,13 @@ const editCustomerType = (customerType: CustomerType) => {
   isEditing.value = true;
 };
 
-const showDeleteDialog = (customerType: CustomerType) => {
+const showConfirmDelete = (customerType: CustomerType) => {
   customerTypeToDelete.value = customerType;
+  showConfirmDeleteModal.value = true;
 };
 
-const closeDeleteDialog = () => {
+const hideDeleteConfirm = () => {
+  showConfirmDeleteModal.value = false;
   customerTypeToDelete.value = null;
 };
 
@@ -313,7 +362,7 @@ const confirmDelete = async () => {
       variant: 'destructive',
     });
   } finally {
-    closeDeleteDialog();
+    hideDeleteConfirm();
   }
 };
 

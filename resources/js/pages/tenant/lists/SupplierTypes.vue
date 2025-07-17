@@ -23,7 +23,7 @@
               <SelectContent>
                 <SelectItem :value="null">None</SelectItem>
                 <SelectItem
-                  v-for="type in supplierTypes"
+                  v-for="type in availableParentSupplierTypes"
                   :key="type.id"
                   :value="type.id"
                 >
@@ -41,9 +41,11 @@
                 Approved
               </Label>
             </div>
-            <Button @click="handleSubmit" class="w-fit">
-              {{ isEditing ? 'Update' : 'Create' }} Supplier Type
-            </Button>
+          </div>
+          <!-- Action Buttons -->
+          <div class="flex gap-2">
+            <Button @click="resetForm" class="w-fit" variant="secondary">Cancel</Button>
+            <Button @click="handleSubmit" class="w-fit">{{ isEditing ? 'Update' : 'Create' }} Supplier Type</Button>
           </div>
         </div>
 
@@ -92,7 +94,7 @@
                         <span>Edit</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem @click="showDeleteDialog(supplierType)" class="text-destructive focus:text-destructive">
+                      <DropdownMenuItem @click="showConfirmDelete(supplierType)" class="text-destructive focus:text-destructive">
                         <Trash class="mr-2 h-4 w-4" />
                         <span>Delete</span>
                       </DropdownMenuItem>
@@ -111,32 +113,35 @@
       </CardContent>
     </Card>
 
-    <!-- Delete Confirmation Dialog -->
-    <Dialog :open="!!supplierTypeToDelete" @update:open="closeDeleteDialog">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Delete Supplier Type</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete this supplier type? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="ghost" @click="closeDeleteDialog">Cancel</Button>
+    <!-- Custom Delete Confirmation Modal -->
+    <div v-if="showConfirmDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div class="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-foreground">Delete Supplier Type</h3>
+          <button @click="hideDeleteConfirm" class="text-muted-foreground hover:text-foreground transition-colors">
+            <X class="h-5 w-5" />
+          </button>
+        </div>
+        <p class="text-muted-foreground mb-6">
+          Are you sure you want to delete supplier type <strong class="text-foreground">{{ supplierTypeToDelete?.type_name }}</strong>? This action cannot be undone.
+        </p>
+        <div class="flex justify-end gap-3">
+          <Button variant="outline" @click="hideDeleteConfirm">Cancel</Button>
           <Button variant="destructive" @click="confirmDelete">Delete</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import type { Ref } from 'vue';
 import axios from 'axios';
 import { useToast } from '@/components/ui/toast/use-toast';
-import { Pencil, Trash } from 'lucide-vue-next';
+import { Pencil, Trash, X } from 'lucide-vue-next';
 import {
   Card,
   CardContent,
@@ -202,14 +207,34 @@ interface SupplierType {
 const supplierTypes: Ref<SupplierType[]> = ref([]);
 const isEditing = ref(false);
 const supplierTypeToDelete: Ref<SupplierType | null> = ref(null);
+const showConfirmDeleteModal = ref(false);
 
 const form = ref({
   id: undefined as string | undefined,
   type_name: '',
   active: true,
   approved: true,
-  parent: null as string | null,
+  parent: undefined as string | undefined | null,
 });
+
+const availableParentSupplierTypes = computed(() => {
+  if (!isEditing.value || !form.value.id) return supplierTypes.value;
+  return supplierTypes.value.filter(type => type.id !== form.value.id);
+});
+
+function hasCircularReference(parentId: string | null | undefined): boolean {
+  if (!parentId || !form.value.id) return false;
+  let currentParentId = parentId;
+  const visited = new Set<string>();
+  while (currentParentId) {
+    if (visited.has(currentParentId)) return true;
+    if (currentParentId === form.value.id) return true;
+    visited.add(currentParentId);
+    const parentType = supplierTypes.value.find(t => t.id === currentParentId);
+    currentParentId = parentType?.parent || null;
+  }
+  return false;
+}
 
 const sortSupplierTypesHierarchically = (types: SupplierType[]): SupplierType[] => {
   const typeMap = new Map<string, SupplierType>();
@@ -252,19 +277,22 @@ const fetchSupplierTypes = async () => {
 };
 
 const handleSubmit = async () => {
+  // Prevent circular reference
+  if (form.value.parent && hasCircularReference(form.value.parent)) {
+    toast({
+      title: 'Error',
+      description: 'A supplier type cannot be its own parent or create a circular reference.',
+      variant: 'destructive',
+    });
+    return;
+  }
   try {
     if (isEditing.value) {
       await axios.put(`/api/supplier-types/${form.value.id}`, form.value);
-      toast({
-        title: 'Success',
-        description: 'Supplier type updated successfully!',
-      });
+      toast({ title: 'Success', description: 'Supplier type updated successfully!' });
     } else {
       await axios.post('/api/supplier-types', form.value);
-      toast({
-        title: 'Success',
-        description: 'Supplier type created successfully!',
-      });
+      toast({ title: 'Success', description: 'Supplier type created successfully!' });
     }
     await fetchSupplierTypes();
     resetForm();
@@ -288,11 +316,13 @@ const editSupplierType = (supplierType: SupplierType) => {
   isEditing.value = true;
 };
 
-const showDeleteDialog = (supplierType: SupplierType) => {
+const showConfirmDelete = (supplierType: SupplierType) => {
   supplierTypeToDelete.value = supplierType;
+  showConfirmDeleteModal.value = true;
 };
 
-const closeDeleteDialog = () => {
+const hideDeleteConfirm = () => {
+  showConfirmDeleteModal.value = false;
   supplierTypeToDelete.value = null;
 };
 
@@ -313,7 +343,7 @@ const confirmDelete = async () => {
       variant: 'destructive',
     });
   } finally {
-    closeDeleteDialog();
+    hideDeleteConfirm();
   }
 };
 

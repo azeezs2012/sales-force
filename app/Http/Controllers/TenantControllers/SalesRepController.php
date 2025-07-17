@@ -37,6 +37,11 @@ class SalesRepController extends Controller
             return response()->json($validator->errors(), 422);
         }
 
+        // Check for circular reference
+        if ($request->parent && $this->hasCircularReference(null, $request->parent, $request->all())) {
+            return response()->json(['error' => 'Cannot set parent to create a circular reference.'], 422);
+        }
+
         if ($request->parent && !$this->hasValidParentHierarchy($request->parent)) {
             throw new \Exception('Parent hierarchy exceeds maximum depth of 5.');
         }
@@ -94,6 +99,11 @@ class SalesRepController extends Controller
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
+        }
+
+        // Check for circular reference
+        if ($request->parent && $this->hasCircularReference($id, $request->parent)) {
+            return response()->json(['error' => 'Cannot set parent to create a circular reference.'], 422);
         }
 
         if ($request->parent && !$this->hasValidParentHierarchy($request->parent)) {
@@ -174,5 +184,40 @@ class SalesRepController extends Controller
         }
 
         return $depth < 5;
+    }
+
+    /**
+     * Check for circular reference when setting a parent.
+     *
+     * @param  int|null  $salesRepId
+     * @param  int  $parentId
+     * @param  array|null $data (for store)
+     * @return bool
+     */
+    private function hasCircularReference($salesRepId, $parentId, $data = null)
+    {
+        // A sales rep cannot be its own parent
+        if ($salesRepId && $salesRepId == $parentId) {
+            return true;
+        }
+
+        $visited = [];
+        $currentParentId = $parentId;
+
+        while ($currentParentId) {
+            if (in_array($currentParentId, $visited)) {
+                return true;
+            }
+            if ($salesRepId && $currentParentId == $salesRepId) {
+                return true;
+            }
+            $visited[] = $currentParentId;
+            if ($data && isset($data['id']) && $currentParentId == $data['id']) {
+                return true;
+            }
+            $parentSalesRep = SalesRep::find($currentParentId);
+            $currentParentId = $parentSalesRep ? $parentSalesRep->parent : null;
+        }
+        return false;
     }
 } 
