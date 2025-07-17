@@ -19,7 +19,7 @@ return new class extends Migration
             $table->text('grn_billing_address')->nullable();
             $table->text('grn_delivery_address')->nullable();
             $table->foreignId('ap_account_id')->constrained('accounts')->onDelete('cascade');
-            $table->string('grn_status')->default('draft'); // e.g., draft, posted
+            $table->string('grn_status')->default('Open'); // Open, Paid
             $table->decimal('total_amount', 15, 2)->default(0);
             $table->timestamps();
             $table->softDeletes();

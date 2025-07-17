@@ -47,7 +47,7 @@ class GrnController extends Controller
                 'ap_account_id' => $validated['ap_account_id'],
                 'grn_billing_address' => $validated['grn_billing_address'] ?? null,
                 'grn_delivery_address' => $validated['grn_delivery_address'] ?? null,
-                'grn_status' => $validated['grn_status'] ?? 'draft',
+                'grn_status' => $validated['grn_status'] ?? 'Open',
                 'total_amount' => $totalAmount,
             ]);
 
@@ -139,7 +139,7 @@ class GrnController extends Controller
                 'ap_account_id' => $validated['ap_account_id'],
                 'grn_billing_address' => $validated['grn_billing_address'] ?? null,
                 'grn_delivery_address' => $validated['grn_delivery_address'] ?? null,
-                'grn_status' => $validated['grn_status'] ?? 'draft',
+                'grn_status' => $validated['grn_status'] ?? 'Open',
                 'total_amount' => $totalAmount,
             ]);
 

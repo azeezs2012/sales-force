@@ -132,6 +132,11 @@ const listNavItems = {
                 href: '/grns',
                 icon: Truck,
             },
+            {
+                title: 'GRN Credits',
+                href: '/grn-credits',
+                icon: CreditCard,
+            },
         ],
     },
 };

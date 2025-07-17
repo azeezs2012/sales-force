@@ -2,31 +2,30 @@
 
 namespace App\Models\TenantModels;
 
+use App\Models\TenantModels\GrnDetail;
 use App\Models\TenantModels\Location;
 use App\Models\TenantModels\Product;
-use App\Models\TenantModels\PurchaseOrderDetail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class GrnDetail extends Model
+class GrnCreditDetail extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'grn_summary_id',
+        'grn_credit_summary_id',
         'product_id',
         'location_id',
         'quantity',
         'cost',
         'total',
-        'purchase_order_detail_id'
+        'grn_detail_id'
     ];
 
-    public function grnSummary(): BelongsTo
+    public function grnCreditSummary(): BelongsTo
     {
-        return $this->belongsTo(GrnSummary::class);
+        return $this->belongsTo(GrnCreditSummary::class);
     }
 
     public function product(): BelongsTo
@@ -39,13 +38,8 @@ class GrnDetail extends Model
         return $this->belongsTo(Location::class);
     }
 
-    public function purchaseOrderDetail(): BelongsTo
+    public function grnDetail(): BelongsTo
     {
-        return $this->belongsTo(PurchaseOrderDetail::class);
-    }
-
-    public function grnCreditDetails(): HasMany
-    {
-        return $this->hasMany(GrnCreditDetail::class);
+        return $this->belongsTo(GrnDetail::class);
     }
 }

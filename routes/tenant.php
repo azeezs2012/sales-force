@@ -24,6 +24,7 @@ use App\Http\Controllers\TenantControllers\AccountTypeController;
 use App\Http\Controllers\TenantControllers\ProductController;
 use App\Http\Controllers\TenantControllers\PurchaseOrderController;
 use App\Http\Controllers\TenantControllers\GrnController;
+use App\Http\Controllers\TenantControllers\GrnCreditController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\PasswordController;
 use Inertia\Inertia;
@@ -116,6 +117,10 @@ Route::middleware([
         Route::get('grns', function () {
             return Inertia::render('tenant/transactions/GoodsReceiveNotes');
         })->name('tenant.list.grns');
+
+        Route::get('grn-credits', function () {
+            return Inertia::render('tenant/transactions/GrnCredits');
+        })->name('tenant.list.grn-credits');
 
         Route::redirect('settings', '/settings/profile');
 
@@ -220,6 +225,8 @@ Route::middleware([
             Route::delete('/purchase-orders/{id}', [PurchaseOrderController::class, 'destroy']);
             Route::get('/po-details-for-grn', [PurchaseOrderController::class, 'getPoDetailsForGrn']);
             Route::apiResource('grns', GrnController::class);
+            Route::get('/grn-details-for-credit', [GrnCreditController::class, 'getGrnDetailsForCredit']);
+            Route::apiResource('grn-credits', GrnCreditController::class);
         });
     });
 
