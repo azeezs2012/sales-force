@@ -39,6 +39,11 @@ class ProductCategoryController extends Controller
             return response()->json(['error' => 'Parent hierarchy exceeds maximum depth of 5.'], 422);
         }
 
+        // Check for circular reference
+        if ($request->parent && $this->hasCircularReference($request->parent)) {
+            return response()->json(['error' => 'A product category cannot be its own parent or create a circular reference.'], 422);
+        }
+
         $productCategory = new ProductCategory($request->all());
         $productCategory->created_by = auth()->id();
         $productCategory->created_at = now();
@@ -70,6 +75,29 @@ class ProductCategoryController extends Controller
     }
 
     /**
+     * Check for circular reference in parent hierarchy.
+     *
+     * @param  int  $parentId
+     * @return bool
+     */
+    private function hasCircularReference($parentId)
+    {
+        $visited = [];
+        $currentParentId = $parentId;
+
+        while ($currentParentId) {
+            if (in_array($currentParentId, $visited)) {
+                return true;
+            }
+            $visited[] = $currentParentId;
+            $currentCategory = ProductCategory::find($currentParentId);
+            $currentParentId = $currentCategory ? $currentCategory->parent : null;
+        }
+
+        return false;
+    }
+
+    /**
      * Display the specified resource.
      *
      * @param  int  $id
@@ -96,6 +124,15 @@ class ProductCategoryController extends Controller
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
+        }
+
+        if ($request->parent && !$this->hasValidParentHierarchy($request->parent)) {
+            return response()->json(['error' => 'Parent hierarchy exceeds maximum depth of 5.'], 422);
+        }
+
+        // Check for circular reference
+        if ($request->parent && $this->hasCircularReference($request->parent)) {
+            return response()->json(['error' => 'A product category cannot be its own parent or create a circular reference.'], 422);
         }
 
         $productCategory->fill($request->all());

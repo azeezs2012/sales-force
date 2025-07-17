@@ -39,6 +39,11 @@ class ProductTypeController extends Controller
             return response()->json(['error' => 'Parent hierarchy exceeds maximum depth of 5.'], 422);
         }
 
+        // Check for circular reference
+        if ($request->parent && $this->hasCircularReference($request->parent)) {
+            return response()->json(['error' => 'A product type cannot be its own parent or create a circular reference.'], 422);
+        }
+
         $productType = new ProductType($request->all());
         $productType->created_by = auth()->id();
         $productType->created_at = now();
@@ -70,6 +75,29 @@ class ProductTypeController extends Controller
     }
 
     /**
+     * Check for circular reference in parent hierarchy.
+     *
+     * @param  int  $parentId
+     * @return bool
+     */
+    private function hasCircularReference($parentId)
+    {
+        $visited = [];
+        $currentParentId = $parentId;
+
+        while ($currentParentId) {
+            if (in_array($currentParentId, $visited)) {
+                return true;
+            }
+            $visited[] = $currentParentId;
+            $currentType = ProductType::find($currentParentId);
+            $currentParentId = $currentType ? $currentType->parent : null;
+        }
+
+        return false;
+    }
+
+    /**
      * Display the specified resource.
      *
      * @param  int  $id
@@ -96,6 +124,15 @@ class ProductTypeController extends Controller
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
+        }
+
+        if ($request->parent && !$this->hasValidParentHierarchy($request->parent)) {
+            return response()->json(['error' => 'Parent hierarchy exceeds maximum depth of 5.'], 422);
+        }
+
+        // Check for circular reference
+        if ($request->parent && $this->hasCircularReference($request->parent)) {
+            return response()->json(['error' => 'A product type cannot be its own parent or create a circular reference.'], 422);
         }
 
         $productType->fill($request->all());
