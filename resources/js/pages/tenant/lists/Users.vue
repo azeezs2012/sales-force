@@ -22,13 +22,23 @@
             class="bg-background"
             required
           />
-          <Input
-            v-model="form.password"
-            type="password"
-            placeholder="Password"
-            class="bg-background"
-            :required="!isEditing"
-          />
+          <div class="relative">
+            <Input
+              v-model="form.password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="Password"
+              class="bg-background pr-10"
+              :required="!isEditing"
+            />
+            <button
+              type="button"
+              @click="togglePasswordVisibility"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <Eye v-if="!showPassword" class="h-4 w-4" />
+              <EyeOff v-else class="h-4 w-4" />
+            </button>
+          </div>
         </div>
         
         <!-- Action Buttons -->
@@ -115,7 +125,7 @@ import { ref, onMounted } from 'vue';
 import type { Ref } from 'vue';
 import axios from 'axios';
 import { useToast } from '@/components/ui/toast/use-toast';
-import { Pencil, Trash, X } from 'lucide-vue-next';
+import { Pencil, Trash, X, Eye, EyeOff } from 'lucide-vue-next';
 import {
   Card,
   CardContent,
@@ -167,6 +177,11 @@ const form = ref({
 });
 
 const showConfirmDeleteModal = ref(false);
+const showPassword = ref(false);
+
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value;
+};
 
 const showConfirmDelete = (user: User) => {
   userToDelete.value = user;

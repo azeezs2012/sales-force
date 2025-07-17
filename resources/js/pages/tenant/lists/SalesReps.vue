@@ -13,7 +13,24 @@
             <Input v-model="form.code" placeholder="Sales Rep Code" class="bg-background" required />
             <Input v-model="form.name" placeholder="Name" class="bg-background" required />
             <Input v-model="form.email" type="email" placeholder="Email" class="bg-background" required />
-            <Input :type="showPassword ? 'text' : 'password'" v-model="form.password" placeholder="Password" class="bg-background" :required="!isEditing" />
+            <!-- Password field with show/hide toggle -->
+            <div class="relative">
+              <Input
+                v-model="form.password"
+                :type="showPassword ? 'text' : 'password'"
+                placeholder="Password"
+                class="bg-background pr-10"
+                :required="!isEditing"
+              />
+              <button
+                type="button"
+                @click="togglePasswordVisibility"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <Eye v-if="!showPassword" class="h-4 w-4" />
+                <EyeOff v-else class="h-4 w-4" />
+              </button>
+            </div>
           </div>
           <div class="grid grid-cols-4 gap-4">
             <Select v-model="form.parent">
@@ -184,7 +201,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Pencil, Trash, X } from 'lucide-vue-next';
+import { Pencil, Trash, X, Eye, EyeOff } from 'lucide-vue-next';
 
 const { toast } = useToast()
 
@@ -420,5 +437,21 @@ const getIndentationLevel = (salesRep: SalesRep): number => {
 }
 .absolute {
   position: absolute;
+}
+
+/* Override browser autofill styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 01000l(var(--background)) inset !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+  transition: background-color 50s ease-in-out 0s;
+}
+
+/* For Firefox */
+input:-moz-autofill {
+  background-color: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
 }
 </style> 
