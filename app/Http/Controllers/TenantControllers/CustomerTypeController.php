@@ -35,6 +35,11 @@ class CustomerTypeController extends Controller
             return response()->json($validator->errors(), 422);
         }
 
+        // Check for circular reference
+        if ($request->parent && $this->hasCircularReference(null, $request->parent, $request->all())) {
+            return response()->json(['error' => 'Cannot set parent to create a circular reference.'], 422);
+        }
+
         if ($request->parent && !$this->hasValidParentHierarchy($request->parent)) {
             return response()->json(['error' => 'Parent hierarchy exceeds maximum depth of 5.'], 422);
         }
@@ -98,6 +103,11 @@ class CustomerTypeController extends Controller
             return response()->json($validator->errors(), 422);
         }
 
+        // Check for circular reference
+        if ($request->parent && $this->hasCircularReference($id, $request->parent)) {
+            return response()->json(['error' => 'Cannot set parent to create a circular reference.'], 422);
+        }
+
         $customerType->fill($request->all());
         $customerType->updated_by = auth()->id();
         $customerType->updated_at = now();
@@ -131,5 +141,40 @@ class CustomerTypeController extends Controller
         $customerType->delete();
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * Check for circular reference when setting a parent.
+     *
+     * @param  int|null  $customerTypeId
+     * @param  int  $parentId
+     * @param  array|null $data (for store)
+     * @return bool
+     */
+    private function hasCircularReference($customerTypeId, $parentId, $data = null)
+    {
+        // A customer type cannot be its own parent
+        if ($customerTypeId && $customerTypeId == $parentId) {
+            return true;
+        }
+
+        $visited = [];
+        $currentParentId = $parentId;
+
+        while ($currentParentId) {
+            if (in_array($currentParentId, $visited)) {
+                return true;
+            }
+            if ($customerTypeId && $currentParentId == $customerTypeId) {
+                return true;
+            }
+            $visited[] = $currentParentId;
+            if ($data && isset($data['id']) && $currentParentId == $data['id']) {
+                return true;
+            }
+            $parentType = CustomerType::find($currentParentId);
+            $currentParentId = $parentType ? $parentType->parent : null;
+        }
+        return false;
     }
 } 

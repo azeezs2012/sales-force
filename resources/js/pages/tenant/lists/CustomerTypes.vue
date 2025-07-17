@@ -23,7 +23,7 @@
               <SelectContent>
                 <SelectItem :value="null">None</SelectItem>
                 <SelectItem
-                  v-for="type in customerTypes"
+                  v-for="type in availableParentCustomerTypes"
                   :key="type.id"
                   :value="type.id"
                 >
@@ -41,6 +41,12 @@
                 Approved
               </Label>
             </div>
+          </div>
+          <!-- Action Buttons -->
+          <div class="flex gap-2">
+            <Button @click="resetForm" class="w-fit" variant="secondary">
+              Cancel
+            </Button>
             <Button @click="handleSubmit" class="w-fit">
               {{ isEditing ? 'Update' : 'Create' }} Customer Type
             </Button>
@@ -132,7 +138,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import type { Ref } from 'vue';
 import axios from 'axios';
 import { useToast } from '@/components/ui/toast/use-toast';
@@ -211,6 +217,33 @@ const form = ref({
   parent: null as string | null,
 });
 
+// Computed property to filter out current customer type from parent options
+const availableParentCustomerTypes = computed(() => {
+  if (!isEditing.value || !form.value.id) {
+    return customerTypes.value;
+  }
+  return customerTypes.value.filter(type => type.id !== form.value.id);
+});
+
+// Function to check for circular references
+const hasCircularReference = (parentId: string | null | undefined): boolean => {
+  if (!parentId || !form.value.id) return false;
+  
+  let currentParentId = parentId;
+  const visited = new Set<string>();
+  
+  while (currentParentId) {
+    if (visited.has(currentParentId)) return true;
+    if (currentParentId === form.value.id) return true;
+    
+    visited.add(currentParentId);
+    const parentType = customerTypes.value.find(t => t.id === currentParentId);
+    currentParentId = parentType?.parent;
+  }
+  
+  return false;
+};
+
 const sortCustomerTypesHierarchically = (types: CustomerType[]): CustomerType[] => {
   const typeMap = new Map<string, CustomerType>();
   types.forEach(type => typeMap.set(type.id, type));
@@ -252,6 +285,16 @@ const fetchCustomerTypes = async () => {
 };
 
 const handleSubmit = async () => {
+  // Prevent circular reference
+  if (form.value.parent && hasCircularReference(form.value.parent)) {
+    toast({
+      title: 'Error',
+      description: 'A customer type cannot be its own parent or create a circular reference.',
+      variant: 'destructive',
+    });
+    return;
+  }
+  
   try {
     if (isEditing.value) {
       await axios.put(`/api/customer-types/${form.value.id}`, form.value);
