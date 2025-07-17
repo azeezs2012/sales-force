@@ -31,7 +31,7 @@
                 <EyeOff v-else class="h-4 w-4" />
               </button>
             </div>
-          </div>
+                    </div>
           <div class="grid grid-cols-4 gap-4">
             <Select v-model="form.parent">
               <SelectTrigger class="bg-background">
@@ -53,14 +53,14 @@
                 <Switch v-model="form.approved" />
                 Approved
               </Label>
-            </div>
-          </div>
+                      </div>
+                    </div>
           <!-- Action Buttons -->
           <div class="flex gap-2">
             <Button @click="resetForm" class="w-fit" variant="secondary">Cancel</Button>
             <Button @click="handleSubmit" class="w-fit">{{ isEditing ? 'Update' : 'Create' }} Sales Rep</Button>
-          </div>
-        </div>
+                    </div>
+                  </div>
         
         <!-- Sales Reps Table -->
         <div class="rounded-md border bg-card">
@@ -81,9 +81,9 @@
             <TableBody>
               <TableRow v-for="salesRep in salesReps" :key="salesRep.id" class="bg-background/50">
                 <TableCell>
-                  <span :style="{ paddingLeft: `${getIndentationLevel(salesRep)}rem` }">
-                    <span v-if="salesRep.parent">• </span>{{ salesRep.code }}
-                  </span>
+                          <span :style="{ paddingLeft: `${getIndentationLevel(salesRep)}rem` }">
+                            <span v-if="salesRep.parent">• </span>{{ salesRep.code }}
+                          </span>
                 </TableCell>
                 <TableCell>{{ salesRep.user?.name || salesRep.name }}</TableCell>
                 <TableCell>{{ salesRep.user?.email || salesRep.email }}</TableCell>
@@ -101,7 +101,7 @@
                 <TableCell>{{ salesRep.creator ? salesRep.creator.name : 'N/A' }}</TableCell>
                 <TableCell>{{ salesRep.updater ? salesRep.updater.name : 'N/A' }}</TableCell>
                 <TableCell>
-                  <DropdownMenu>
+                          <DropdownMenu>
                     <DropdownMenuTrigger as-child>
                       <Button variant="secondary" class="w-[130px]">Select Action</Button>
                     </DropdownMenuTrigger>
@@ -110,13 +110,13 @@
                         <Pencil class="mr-2 h-4 w-4" />
                         <span>Edit</span>
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
+                              <DropdownMenuSeparator />
                       <DropdownMenuItem @click="showConfirmDelete(salesRep)" class="text-destructive focus:text-destructive">
                         <Trash class="mr-2 h-4 w-4" />
                         <span>Delete</span>
                       </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                 </TableCell>
               </TableRow>
               <TableRow v-if="salesReps.length === 0">
@@ -126,7 +126,7 @@
               </TableRow>
             </TableBody>
           </Table>
-        </div>
+                </div>
       </CardContent>
     </Card>
 
@@ -138,7 +138,7 @@
           <button @click="hideDeleteConfirm" class="text-muted-foreground hover:text-foreground transition-colors">
             <X class="h-5 w-5" />
           </button>
-        </div>
+              </div>
         <p class="text-muted-foreground mb-6">
           Are you sure you want to delete sales representative <strong class="text-foreground">{{ salesRepToDelete?.name || salesRepToDelete?.user?.name }}</strong>? This action cannot be undone.
         </p>
@@ -322,10 +322,10 @@ const handleSubmit = async () => {
         description: 'Sales representative updated successfully!',
       });
     } else {
-      await axios.post('/api/sales-reps', form.value);
-      toast({
-        title: 'Success',
-        description: 'Sales representative created successfully!',
+    await axios.post('/api/sales-reps', form.value);
+    toast({
+      title: 'Success',
+      description: 'Sales representative created successfully!',
       });
     }
     await fetchSalesReps();
@@ -334,7 +334,7 @@ const handleSubmit = async () => {
     toast({
       title: 'Error',
       description: error.response?.data?.message || 'Operation failed',
-      variant: 'destructive',
+      variant: 'destructive', 
     });
   }
 };

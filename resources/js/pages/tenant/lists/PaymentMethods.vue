@@ -16,7 +16,7 @@
               class="bg-background"
               required
             />
-            <div class="flex items-center gap-4">
+                  <div class="flex items-center gap-4">
               <Label class="flex items-center gap-2">
                 <Switch v-model="form.active" />
                 Active
@@ -203,10 +203,10 @@ const handleSubmit = async () => {
         description: 'Payment method updated successfully!',
       });
     } else {
-      await axios.post('/api/payment-methods', form.value);
-      toast({
-        title: 'Success',
-        description: 'Payment method created successfully!',
+    await axios.post('/api/payment-methods', form.value);
+    toast({
+      title: 'Success',
+      description: 'Payment method created successfully!',
       });
     }
     await fetchPaymentMethods();

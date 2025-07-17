@@ -23,13 +23,13 @@
             required
           />
           <div class="relative">
-            <Input
-              v-model="form.password"
+          <Input
+            v-model="form.password"
               :type="showPassword ? 'text' : 'password'"
-              placeholder="Password"
+            placeholder="Password"
               class="bg-background pr-10"
               :required="!isEditing"
-            />
+          />
             <button
               type="button"
               @click="togglePasswordVisibility"
