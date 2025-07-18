@@ -25,6 +25,8 @@ use App\Http\Controllers\TenantControllers\ProductController;
 use App\Http\Controllers\TenantControllers\PurchaseOrderController;
 use App\Http\Controllers\TenantControllers\GrnController;
 use App\Http\Controllers\TenantControllers\GrnCreditController;
+use App\Http\Controllers\TenantControllers\GrnPaymentController;
+use App\Http\Controllers\TenantControllers\PaymentController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\PasswordController;
 use Inertia\Inertia;
@@ -121,6 +123,10 @@ Route::middleware([
         Route::get('grn-credits', function () {
             return Inertia::render('tenant/transactions/GrnCredits');
         })->name('tenant.list.grn-credits');
+
+        Route::get('grn-payments', function () {
+            return Inertia::render('tenant/transactions/GrnPayments');
+        })->name('tenant.list.grn-payments');
 
         Route::redirect('settings', '/settings/profile');
 
@@ -227,6 +233,23 @@ Route::middleware([
             Route::apiResource('grns', GrnController::class);
             Route::get('/grn-details-for-credit', [GrnCreditController::class, 'getGrnDetailsForCredit']);
             Route::apiResource('grn-credits', GrnCreditController::class);
+            
+            // GRN Payment routes
+            Route::get('/grn-payments', [GrnPaymentController::class, 'index']);
+            Route::get('/grn-payments/{id}', [GrnPaymentController::class, 'show']);
+            Route::put('/grn-payments/{id}', [GrnPaymentController::class, 'update']);
+            Route::delete('/grn-payments/{id}', [GrnPaymentController::class, 'destroy']);
+            Route::get('/grn-payments/supplier/{supplierId}/open-grns', [GrnPaymentController::class, 'getOpenGrns']);
+            Route::get('/grn-payments/supplier/{supplierId}/all-grns/{paymentId?}', [GrnPaymentController::class, 'getAllGrns']);
+            Route::get('/grn-payments/supplier/{supplierId}/available-credits', [GrnPaymentController::class, 'getAvailableCredits']);
+            Route::get('/grn-payments/supplier/{supplierId}/all-credits/{paymentId?}', [GrnPaymentController::class, 'getAllCredits']);
+            Route::post('/grn-payments', [GrnPaymentController::class, 'store']);
+            Route::get('/grn-payments/supplier/{supplierId}/summary', [GrnPaymentController::class, 'getPaymentSummary']);
+            
+            // Payment settlement routes
+            Route::post('/payments/settlements', [PaymentController::class, 'createSettlement']);
+            Route::get('/payments/settlements/{grnId}/summary', [PaymentController::class, 'getSettlementSummary']);
+            Route::get('/payments/grns-with-settlements', [PaymentController::class, 'getGrnsWithSettlements']);
         });
     });
 

@@ -28,12 +28,14 @@ class TenantAdminUser implements ShouldQueue
     public function handle(): void
     {
         // Create an admin user for the tenant
-        User::create([
-            'name' => 'Admin',
-            'email' => 'admin@salesforce.com',
-            'password' => bcrypt('password'), // Use a secure password
-            'is_admin' => true,
-            'role' => 'super_admin',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'admin@salesforce.com'],
+            [
+                'name' => 'Admin',
+                'password' => bcrypt('password'), // Use a secure password
+                'is_admin' => true,
+                'role' => 'super_admin',
+            ]
+        );
     }
 }

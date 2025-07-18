@@ -28,7 +28,7 @@ class GrnCreditValidator extends FormRequest
             'ap_account_id' => 'required|exists:accounts,id',
             'grn_credit_billing_address' => 'nullable|string',
             'grn_credit_delivery_address' => 'nullable|string',
-            'grn_credit_status' => 'required|string|in:draft,posted',
+            'grn_credit_status' => 'nullable|string|in:Open,Partial,Closed',
             'credit_reason' => 'nullable|string|max:500',
             'total_amount' => 'nullable|numeric|min:0',
             'details' => 'required|array|min:1',

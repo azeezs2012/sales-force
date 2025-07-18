@@ -137,6 +137,11 @@ const listNavItems = {
                 href: '/grn-credits',
                 icon: CreditCard,
             },
+            {
+                title: 'GRN Payments',
+                href: '/grn-payments',
+                icon: CreditCard,
+            },
         ],
     },
 };

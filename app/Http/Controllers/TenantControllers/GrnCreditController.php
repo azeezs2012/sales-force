@@ -7,6 +7,7 @@ use App\Http\Requests\Tenant\GrnCreditValidator;
 use App\Models\TenantModels\GrnCreditSummary;
 use App\Models\TenantModels\GrnSummary;
 use App\Models\TenantModels\GrnDetail;
+use App\Models\TenantModels\GrnSettlement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -47,7 +48,7 @@ class GrnCreditController extends Controller
                 'ap_account_id' => $validated['ap_account_id'],
                 'grn_credit_billing_address' => $validated['grn_credit_billing_address'] ?? null,
                 'grn_credit_delivery_address' => $validated['grn_credit_delivery_address'] ?? null,
-                'grn_credit_status' => $validated['grn_credit_status'] ?? 'draft',
+                'grn_credit_status' => 'Open', // Always start as Open
                 'total_amount' => $totalAmount,
                 'credit_reason' => $validated['credit_reason'] ?? null,
             ]);
@@ -63,15 +64,42 @@ class GrnCreditController extends Controller
                 ]);
             }
 
-            // After all details are processed, check and update GRN statuses
+            // Create settlements for GRN credits that have GRN detail relationships
             $grnIds = collect($validated['details'])
                 ->whereNotNull('grn_detail_id')
                 ->map(function ($detail) {
                     return GrnDetail::find($detail['grn_detail_id'])->grn_summary_id;
-                })->unique()->toArray();
+                })->unique();
 
-            foreach($grnIds as $grnId) {
-                $this->checkAndUpdateGrnStatus($grnId);
+            foreach ($grnIds as $grnId) {
+                $grnSummary = GrnSummary::find($grnId);
+                if ($grnSummary) {
+                    // Calculate total GRN credit amount for this GRN
+                    $grnCreditAmount = collect($validated['details'])
+                        ->whereNotNull('grn_detail_id')
+                        ->filter(function ($detail) use ($grnId) {
+                            $grnDetail = GrnDetail::find($detail['grn_detail_id']);
+                            return $grnDetail && $grnDetail->grn_summary_id == $grnId;
+                        })
+                        ->sum(function ($detail) {
+                            return $detail['quantity'] * $detail['cost'];
+                        });
+
+                    // Create settlement record
+                    GrnSettlement::create([
+                        'grn_summary_id' => $grnId,
+                        'settlement_type' => 'grn_credit',
+                        'settlement_reference_id' => $grnCreditSummary->id,
+                        'settlement_reference_type' => 'grn_credit_summaries',
+                        'settlement_amount' => $grnCreditAmount,
+                        'settlement_date' => $validated['grn_credit_date'],
+                        'settlement_notes' => "GRN Credit: {$grnCreditSummary->id}",
+                        'created_by' => auth()->id(),
+                    ]);
+
+                    // Update GRN settlement totals
+                    $grnSummary->updateSettlementTotals();
+                }
             }
 
             DB::commit();
@@ -136,10 +164,12 @@ class GrnCreditController extends Controller
                 'ap_account_id' => $validated['ap_account_id'],
                 'grn_credit_billing_address' => $validated['grn_credit_billing_address'] ?? null,
                 'grn_credit_delivery_address' => $validated['grn_credit_delivery_address'] ?? null,
-                'grn_credit_status' => $validated['grn_credit_status'] ?? 'draft',
                 'total_amount' => $totalAmount,
                 'credit_reason' => $validated['credit_reason'] ?? null,
             ]);
+
+            // Update status automatically based on settlements
+            $grnCredit->updateSettlementTotals();
 
             $existingDetailIds = $grnCredit->details->pluck('id')->toArray();
             $incomingDetailIds = collect($validated['details'])->pluck('id')->filter()->toArray();
@@ -162,16 +192,57 @@ class GrnCreditController extends Controller
                     ]
                 );
             }
-            
-            $finalGrnIds = collect($validated['details'])
+
+            // Delete existing settlements for this GRN credit
+            GrnSettlement::where('settlement_reference_type', 'grn_credit_summaries')
+                ->where('settlement_reference_id', $grnCredit->id)
+                ->delete();
+
+            // Create new settlements for GRN credits that have GRN detail relationships
+            $grnIds = collect($validated['details'])
                 ->whereNotNull('grn_detail_id')
-                ->map(fn($detail) => GrnDetail::find($detail['grn_detail_id'])->grn_summary_id)
-                ->unique();
+                ->map(function ($detail) {
+                    return GrnDetail::find($detail['grn_detail_id'])->grn_summary_id;
+                })->unique();
 
-            $allGrnIdsToUpdate = $initialGrnIds->merge($finalGrnIds)->unique();
+            foreach ($grnIds as $grnId) {
+                $grnSummary = GrnSummary::find($grnId);
+                if ($grnSummary) {
+                    // Calculate total GRN credit amount for this GRN
+                    $grnCreditAmount = collect($validated['details'])
+                        ->whereNotNull('grn_detail_id')
+                        ->filter(function ($detail) use ($grnId) {
+                            $grnDetail = GrnDetail::find($detail['grn_detail_id']);
+                            return $grnDetail && $grnDetail->grn_summary_id == $grnId;
+                        })
+                        ->sum(function ($detail) {
+                            return $detail['quantity'] * $detail['cost'];
+                        });
 
-            foreach($allGrnIdsToUpdate as $grnId) {
-                $this->checkAndUpdateGrnStatus($grnId);
+                    // Create settlement record
+                    GrnSettlement::create([
+                        'grn_summary_id' => $grnId,
+                        'settlement_type' => 'grn_credit',
+                        'settlement_reference_id' => $grnCredit->id,
+                        'settlement_reference_type' => 'grn_credit_summaries',
+                        'settlement_amount' => $grnCreditAmount,
+                        'settlement_date' => $validated['grn_credit_date'],
+                        'settlement_notes' => "GRN Credit: {$grnCredit->id}",
+                        'created_by' => auth()->id(),
+                    ]);
+
+                    // Update GRN settlement totals
+                    $grnSummary->updateSettlementTotals();
+                }
+            }
+
+            // Update settlement totals for GRNs that were affected but no longer have credits
+            $allAffectedGrnIds = $initialGrnIds->merge($grnIds)->unique();
+            foreach ($allAffectedGrnIds as $grnId) {
+                $grnSummary = GrnSummary::find($grnId);
+                if ($grnSummary) {
+                    $grnSummary->updateSettlementTotals();
+                }
             }
 
             DB::commit();
@@ -190,23 +261,34 @@ class GrnCreditController extends Controller
     {
         DB::beginTransaction();
         try {
-            $grnIdsToUpdate = [];
-            foreach ($grnCredit->details as $detail) {
-                if ($detail->grn_detail_id) {
-                    $grnIdsToUpdate[] = $detail->grnDetail->grn_summary_id;
-                }
-            }
+            // Get GRN IDs that will be affected by this deletion
+            $affectedGrnIds = $grnCredit->details()
+                ->whereNotNull('grn_detail_id')
+                ->with('grnDetail')
+                ->get()
+                ->map(fn($detail) => $detail->grnDetail->grn_summary_id)
+                ->unique();
 
-            \Log::info("Deleting GRN Credit - ID: {$grnCredit->id}, GRN IDs to update: " . implode(', ', array_unique($grnIdsToUpdate)));
+            // Delete settlements for this GRN credit
+            GrnSettlement::where('settlement_reference_type', 'grn_credit_summaries')
+                ->where('settlement_reference_id', $grnCredit->id)
+                ->delete();
+
+            // Delete GRN credit settlements
+            GrnCreditSettlement::where('grn_credit_summary_id', $grnCredit->id)
+                ->delete();
 
             $grnCredit->delete(); // This will cascade delete details
 
-            DB::commit();
-
-            // After committing the deletion, check and update GRN status
-            foreach (array_unique($grnIdsToUpdate) as $grnId) {
-                $this->checkAndUpdateGrnStatus($grnId);
+            // Update settlement totals for affected GRNs
+            foreach ($affectedGrnIds as $grnId) {
+                $grnSummary = GrnSummary::find($grnId);
+                if ($grnSummary) {
+                    $grnSummary->updateSettlementTotals();
+                }
             }
+
+            DB::commit();
             
             return response()->json(['message' => 'GRN Credit deleted successfully.']);
         } catch (\Exception $e) {
@@ -251,39 +333,7 @@ class GrnCreditController extends Controller
         ]);
     }
 
-    private function checkAndUpdateGrnStatus($grnId)
-    {
-        // Force a fresh query to get the latest state after deletion
-        $grn = GrnSummary::with('details')->find($grnId);
-        if ($grn) {
-            $details = $grn->details;
-            
-            // Calculate total credited amount for this GRN using a direct query
-            $totalCreditedAmount = \DB::table('grn_credit_details')
-                ->join('grn_details', 'grn_credit_details.grn_detail_id', '=', 'grn_details.id')
-                ->where('grn_details.grn_summary_id', $grnId)
-                ->sum('grn_credit_details.total');
-            
-            // Log the values for debugging
-            \Log::info("GRN Status Update - GRN ID: {$grnId}, Current Status: {$grn->grn_status}, Total Amount: {$grn->total_amount}, Credited Amount: {$totalCreditedAmount}");
-            
-            // Determine new status based on credited amount vs total amount
-            $newStatus = 'Open';
-            if ($totalCreditedAmount > 0 && $totalCreditedAmount >= $grn->total_amount) {
-                $newStatus = 'Paid';
-            } else {
-                $newStatus = 'Open';
-            }
-            
-            // Update status if it has changed
-            if ($grn->grn_status !== $newStatus) {
-                $grn->update(['grn_status' => $newStatus]);
-                \Log::info("GRN Status Updated - GRN ID: {$grnId}, Old Status: {$grn->grn_status}, New Status: {$newStatus}");
-            } else {
-                \Log::info("GRN Status Unchanged - GRN ID: {$grnId}, Status: {$grn->grn_status}");
-            }
-        }
-    }
+
 
     /**
      * Validate that GRN Credit quantities don't exceed available GRN quantities

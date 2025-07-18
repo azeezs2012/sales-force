@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
-import { ref, computed, onMounted, type Ref } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -79,6 +79,9 @@ const selectedGrnCreditIds = ref<string[]>([]);
 
 const canCreateGrnCredit = computed(() => selectedGrnCreditIds.value.length > 0);
 
+const isGrnCreditClosed = computed(() => form.grn_credit_status === 'Closed');
+const isGrnCreditPartial = computed(() => form.grn_credit_status === 'Partial');
+
 const form = useForm({
     id: null,
     grn_credit_date: new Date().toISOString().substr(0, 10),
@@ -87,7 +90,6 @@ const form = useForm({
     ap_account_id: null,
     grn_credit_billing_address: '',
     grn_credit_delivery_address: '',
-    grn_credit_status: 'draft',
     credit_reason: '',
     details: [],
 });
@@ -146,6 +148,20 @@ onMounted(() => {
     if (grnIds) {
         createGrnCreditFromGrns(grnIds);
     }
+    
+    // Add global escape key handler for dialog cleanup
+    const handleEscape = (event) => {
+        if (event.key === 'Escape' && grnCreditToDelete.value) {
+            closeDeleteDialog();
+        }
+    };
+    
+    document.addEventListener('keydown', handleEscape);
+    
+    // Cleanup on unmount
+    return () => {
+        document.removeEventListener('keydown', handleEscape);
+    };
 });
 
 const createGrnCreditFromGrns = async (grnIds) => {
@@ -341,8 +357,9 @@ const filteredGrnCredits = computed(() => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="draft">Draft</SelectItem>
-                                    <SelectItem value="posted">Posted</SelectItem>
+                                    <SelectItem value="Open">Open</SelectItem>
+                                    <SelectItem value="Partial">Partial</SelectItem>
+                                    <SelectItem value="Closed">Closed</SelectItem>
                                 </SelectContent>
                             </Select>
                             <div class="flex items-center gap-2">
@@ -357,7 +374,7 @@ const filteredGrnCredits = computed(() => {
                         <TableHeader>
                             <TableRow>
                                 <TableHead class="w-10">
-                                     <Checkbox @update:checked="(checked) => {
+                                    <Checkbox @update:checked="(checked) => {
                                         if (checked) {
                                             selectedGrnCreditIds = filteredGrnCredits.map(credit => credit.id)
                                         } else {
@@ -393,8 +410,8 @@ const filteredGrnCredits = computed(() => {
                                 <TableCell>{{ credit.supplier?.user?.name }}</TableCell>
                                 <TableCell>
                                     <Badge 
-                                        :variant="credit.grn_credit_status === 'posted' ? 'default' : 'secondary'"
-                                        :class="credit.grn_credit_status === 'posted' ? 'bg-green-500 text-white hover:bg-green-500' : 'bg-orange-500 text-white hover:bg-orange-500'"
+                                        :variant="credit.grn_credit_status === 'Closed' ? 'destructive' : credit.grn_credit_status === 'Partial' ? 'secondary' : 'default'"
+                                        :class="credit.grn_credit_status === 'Partial' ? 'bg-orange-500 text-white hover:bg-orange-500' : credit.grn_credit_status === 'Closed' ? 'hover:bg-destructive' : 'hover:bg-primary'"
                                     >
                                         {{ credit.grn_credit_status }}
                                     </Badge>
@@ -421,9 +438,32 @@ const filteredGrnCredits = computed(() => {
             </Card>
 
             <!-- GRN Credit Create/Edit Form -->
-            <div v-else class="flex flex-col gap-4">
+            <div v-else class="flex flex-col gap-4 relative">
+                <!-- Bottom Watermarks -->
+                <div v-if="isGrnCreditClosed" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 pointer-events-none">
+                    <div class="bg-red-600/95 text-white px-12 py-6 rounded-xl transform -rotate-12 text-3xl font-bold shadow-2xl border-2 border-red-700">
+                        CLOSED
+                    </div>
+                </div>
+                <div v-if="isGrnCreditPartial" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 pointer-events-none">
+                    <div class="bg-orange-600/95 text-white px-12 py-6 rounded-xl transform -rotate-12 text-3xl font-bold shadow-2xl border-2 border-orange-700">
+                        PARTIAL
+                    </div>
+                </div>
+                <!-- Form Overlay for Closed GRN Credit -->
+                <div v-if="isGrnCreditClosed" class="absolute inset-0 z-5 bg-gray-900/20 pointer-events-none rounded-lg"></div>
                 <Card>
-                    <CardHeader><CardTitle>{{ isEditing ? 'Edit' : 'Create' }} GRN Credit</CardTitle></CardHeader>
+                    <CardHeader>
+                        <div class="flex items-center justify-between">
+                            <CardTitle>{{ isEditing ? 'Edit' : 'Create' }} GRN Credit</CardTitle>
+                            <Badge v-if="isGrnCreditClosed" variant="destructive" class="text-lg px-4 py-2">
+                                {{ form.grn_credit_status }}
+                            </Badge>
+                            <Badge v-if="isGrnCreditPartial" variant="secondary" class="text-lg px-4 py-2 bg-orange-500 text-white">
+                                {{ form.grn_credit_status }}
+                            </Badge>
+                        </div>
+                    </CardHeader>
                     <CardContent class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="flex flex-col space-y-1.5">
                             <Label>Date</Label>
@@ -468,6 +508,7 @@ const filteredGrnCredits = computed(() => {
                             <Label>Billing Address</Label>
                             <Textarea v-model="form.grn_credit_billing_address" placeholder="Billing Address" />
                         </div>
+
                     </CardContent>
                 </Card>
 

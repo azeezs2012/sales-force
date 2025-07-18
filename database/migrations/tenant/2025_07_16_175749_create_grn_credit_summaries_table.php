@@ -19,7 +19,7 @@ return new class extends Migration
             $table->text('grn_credit_billing_address')->nullable();
             $table->text('grn_credit_delivery_address')->nullable();
             $table->foreignId('ap_account_id')->constrained('accounts')->onDelete('cascade');
-            $table->string('grn_credit_status')->default('draft'); // e.g., draft, posted
+            $table->string('grn_credit_status')->default('Open'); // Open, Partial, Closed
             $table->decimal('total_amount', 15, 2)->default(0);
             $table->text('credit_reason')->nullable(); // Reason for returning goods
             $table->timestamps();

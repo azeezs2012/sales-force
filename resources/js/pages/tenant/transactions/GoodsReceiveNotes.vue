@@ -73,6 +73,19 @@ const selectedSupplierId = computed(() => {
 
 const canCreateGrnCredit = computed(() => selectedGrnIds.value.length > 0);
 
+const getGrnStatusVariant = (status) => {
+    switch (status) {
+        case 'Open': return 'default';
+        case 'Partial': return 'secondary';
+        case 'Closed': return 'destructive';
+        case 'Paid': return 'default';
+        default: return 'default';
+    }
+};
+
+const isGrnClosed = computed(() => form.grn_status === 'Closed');
+const isGrnPartial = computed(() => form.grn_status === 'Partial');
+
 const form = useForm({
     id: null,
     grn_date: new Date().toISOString().substr(0, 10),
@@ -365,8 +378,8 @@ const confirmDelete = async () => {
                                 <TableCell>{{ grn.supplier?.user?.name }}</TableCell>
                                 <TableCell>
                                     <Badge 
-                                        :variant="grn.grn_status === 'Paid' ? 'default' : 'secondary'"
-                                        :class="grn.grn_status === 'Paid' ? 'bg-green-500 text-white hover:bg-green-500' : 'bg-orange-500 text-white hover:bg-orange-500'"
+                                        :variant="grn.grn_status === 'Closed' ? 'destructive' : grn.grn_status === 'Partial' ? 'secondary' : 'default'"
+                                        :class="grn.grn_status === 'Partial' ? 'bg-orange-500 text-white hover:bg-orange-500' : grn.grn_status === 'Closed' ? 'hover:bg-destructive' : 'hover:bg-primary'"
                                     >
                                         {{ grn.grn_status }}
                                     </Badge>
@@ -391,9 +404,32 @@ const confirmDelete = async () => {
             </Card>
 
             <!-- GRN Create/Edit Form -->
-            <div v-else class="flex flex-col gap-4">
+            <div v-else class="flex flex-col gap-4 relative">
+                <!-- Bottom Watermarks -->
+                <div v-if="isGrnClosed" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 pointer-events-none">
+                    <div class="bg-red-600/95 text-white px-12 py-6 rounded-xl transform -rotate-12 text-3xl font-bold shadow-2xl border-2 border-red-700">
+                        CLOSED
+                    </div>
+                </div>
+                <div v-if="isGrnPartial" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 pointer-events-none">
+                    <div class="bg-orange-600/95 text-white px-12 py-6 rounded-xl transform -rotate-12 text-3xl font-bold shadow-2xl border-2 border-orange-700">
+                        PARTIAL
+                    </div>
+                </div>
+                <!-- Form Overlay for Closed GRN -->
+                <div v-if="isGrnClosed" class="absolute inset-0 z-5 bg-gray-900/20 pointer-events-none rounded-lg"></div>
                 <Card>
-                    <CardHeader><CardTitle>{{ isEditing ? 'Edit' : 'Create' }} GRN</CardTitle></CardHeader>
+                    <CardHeader>
+                        <div class="flex items-center justify-between">
+                            <CardTitle>{{ isEditing ? 'Edit' : 'Create' }} GRN</CardTitle>
+                            <Badge v-if="isGrnClosed" variant="destructive" class="text-lg px-4 py-2">
+                                {{ form.grn_status }}
+                            </Badge>
+                            <Badge v-if="isGrnPartial" variant="secondary" class="text-lg px-4 py-2 bg-orange-500 text-white">
+                                {{ form.grn_status }}
+                            </Badge>
+                        </div>
+                    </CardHeader>
                     <CardContent class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="flex flex-col space-y-1.5">
                             <Label>Date</Label>
