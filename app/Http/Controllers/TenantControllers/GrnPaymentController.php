@@ -61,8 +61,8 @@ class GrnPaymentController extends Controller
 
             // Get GRN applications from settlements with optimized query
             $grnApplications = GrnSettlement::select('grn_summary_id')
-                ->selectRaw('SUM(CASE WHEN settlement_type = "payment" THEN settlement_amount ELSE 0 END) as apply_payment')
-                ->selectRaw('SUM(CASE WHEN settlement_type = "grn_credit" THEN settlement_amount ELSE 0 END) as apply_credits')
+                ->selectRaw('SUM(CASE WHEN settlement_type = ? THEN settlement_amount ELSE 0 END) as apply_payment', ['payment'])
+                ->selectRaw('SUM(CASE WHEN settlement_type = ? THEN settlement_amount ELSE 0 END) as apply_credits', ['grn_credit'])
                 ->where('settlement_reference_type', 'payments')
                 ->where('settlement_reference_id', $payment->id)
                 ->groupBy('grn_summary_id')
@@ -82,9 +82,22 @@ class GrnPaymentController extends Controller
                 ->pluck('grn_credit_summary_id')
                 ->toArray();
 
+            // Convert payment method string to ID for frontend compatibility
+            $paymentMethodId = null;
+            if ($payment->payment_method) {
+                $paymentMethod = PaymentMethod::where('method_name', $payment->payment_method)->first();
+                $paymentMethodId = $paymentMethod ? $paymentMethod->id : null;
+            }
+
             $paymentData = $payment->toArray();
+            $paymentData['payment_method_id'] = $paymentMethodId;
             $paymentData['grn_applications'] = $grnApplications;
             $paymentData['credit_applications'] = $creditApplications;
+
+            // Add supplier_id if not present
+            if (!isset($paymentData['supplier_id'])) {
+                $paymentData['supplier_id'] = $payment->supplier_id;
+            }
 
             return response()->json($paymentData);
         } catch (\Exception $e) {
@@ -93,7 +106,7 @@ class GrnPaymentController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            return response()->json(['message' => 'Failed to fetch payment details.'], 500);
+            return response()->json(['message' => 'Failed to fetch payment details.', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -124,9 +137,10 @@ class GrnPaymentController extends Controller
             $payment = Payment::findOrFail($id);
 
             // Update basic payment fields
+            $paymentMethod = PaymentMethod::find($request->payment_method_id);
             $payment->update([
                 'payment_date' => $request->payment_date,
-                'payment_method_id' => $request->payment_method_id,
+                'payment_method' => $paymentMethod ? $paymentMethod->method_name : null,
                 'payment_amount' => $request->payment_amount,
                 'payment_reference' => $request->payment_reference,
                 'payment_notes' => $request->payment_notes,
@@ -555,7 +569,7 @@ class GrnPaymentController extends Controller
                 'payment_reference' => $request->payment_reference,
                 'payment_notes' => $request->payment_notes,
                 'payment_status' => 'Open', // Default status
-                'payment_method' => PaymentMethod::find($request->payment_method_id)->payment_method_name,
+                'payment_method' => PaymentMethod::find($request->payment_method_id)->method_name,
                 'created_by' => auth()->id(),
             ]);
 
