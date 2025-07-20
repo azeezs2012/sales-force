@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/TenantAppLayout.vue';
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, onMounted, computed, nextTick, reactive, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -316,12 +316,12 @@ const onSupplierChange = async () => {
         } else {
             creditUrl = `/api/grn-payments/supplier/${selectedSupplier.value}/${creditEndpoint}`;
         }
-        console.log('Loading credits from URL:', creditUrl);
         const creditResponse = await axios.get(creditUrl);
-        console.log('Credit Response:', creditResponse.data);
         availableCredits.value = creditResponse.data.map(credit => ({
             ...credit,
-            selected: false
+            selected: false,
+            apply_amount: 0,
+            applied_amount: 0
         }));
 
         // Auto-apply payment amount to oldest GRNs (only when creating)
@@ -408,16 +408,39 @@ const calculateGrnTotals = () => {
     });
 };
 
+// Simple ref for select all state
 const selectAllCredits = computed({
     get() {
         return availableCredits.value.length > 0 && availableCredits.value.every(credit => credit.selected);
     },
     set(value) {
-        availableCredits.value.forEach(credit => {
-            credit.selected = value;
-        });
+        toggleSelectAll(value);
     }
 });
+
+// Simple function to handle select all
+const toggleSelectAll = (checked: boolean) => {
+    availableCredits.value.forEach(credit => {
+        credit.selected = checked;
+        credit.apply_amount = checked ? parseFloat(credit.total_amount) : 0;
+    });
+    calculateCreditTotals();
+};
+
+// Function to handle individual credit selection
+const handleCreditSelection = (credit: any, selected: boolean) => {
+    credit.selected = selected;
+    credit.apply_amount = selected ? parseFloat(credit.total_amount) : 0;
+    calculateCreditTotals();
+};
+
+const calculateCreditTotals = () => {
+    availableCredits.value.forEach(credit => {
+        const totalAmount = parseFloat(credit.total_amount) || 0;
+        const applyAmount = parseFloat(credit.apply_amount) || 0;
+        credit.applied_amount = Math.min(totalAmount, applyAmount);
+    });
+};
 
 const createPayment = async () => {
     if (!canCreatePayment.value) {
@@ -459,7 +482,10 @@ const createPayment = async () => {
                 })),
             credit_applications: availableCredits.value
                 .filter(credit => credit.selected)
-                .map(credit => credit.id)
+                .map(credit => ({
+                    credit_id: credit.id,
+                    apply_amount: parseFloat(credit.applied_amount) || 0
+                }))
         };
 
         const response = await axios.post('/api/grn-payments', paymentPayload);
@@ -496,7 +522,9 @@ const totalCreditValue = computed(() => {
 });
 
 const totalAppliedCredits = computed(() => {
-    return openGrns.value.reduce((sum, grn) => sum + (parseFloat(grn.apply_credits) || 0), 0);
+    return availableCredits.value
+        .filter(credit => credit.selected)
+        .reduce((sum, credit) => sum + parseFloat(credit.applied_amount), 0);
 });
 
 const selectedCreditsCount = computed(() => {
@@ -758,37 +786,60 @@ const isPaymentPartial = computed(() => form.payment_status === 'Partial');
                                 <span>Loading credits...</span>
                             </div>
                         </div>
-                        <div v-else class="space-y-4">
-                            <div class="flex items-center space-x-2">
-                                <Checkbox 
-                                    id="select_all_credits" 
-                                    v-model="selectAllCredits"
-                                    :disabled="isLoading"
-                                />
-                                <Label for="select_all_credits">Select All Credits</Label>
-                            </div>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <Card v-for="credit in availableCredits" :key="credit.id" class="p-4">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex items-center space-x-2">
+                        <div v-else>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead class="w-12">
+                                            <Checkbox 
+                                                id="select_all_credits" 
+                                                v-model="selectAllCredits"
+                                                @update:model-value="toggleSelectAll"
+                                                :disabled="isLoading"
+                                            />
+                                        </TableHead>
+                                        <TableHead>Credit #</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead class="text-right">Total Amount</TableHead>
+                                        <TableHead class="text-right">Apply Amount</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    <TableRow v-for="credit in availableCredits" :key="credit.id">
+                                        <TableCell>
                                             <Checkbox 
                                                 :id="`credit_${credit.id}`" 
                                                 v-model="credit.selected"
+                                                @update:model-value="(value) => handleCreditSelection(credit, value)"
                                                 :disabled="isLoading"
                                             />
-                                            <div>
-                                                <p class="font-medium">Credit #{{ credit.id }}</p>
-                                                <p class="text-sm text-gray-600">{{ formatDate(credit.grn_credit_date) }}</p>
-                                                <p class="text-sm text-gray-600">{{ formatCurrency(credit.total_amount) }}</p>
-                                            </div>
-                                        </div>
-                                        <Badge :variant="getCreditStatusVariant(credit.grn_credit_status)">
-                                            {{ credit.grn_credit_status }}
-                                        </Badge>
-                                    </div>
-                                </Card>
-                            </div>
+                                        </TableCell>
+                                        <TableCell>{{ credit.id }}</TableCell>
+                                        <TableCell>{{ formatDate(credit.grn_credit_date) }}</TableCell>
+                                        <TableCell>
+                                            <Badge :variant="getCreditStatusVariant(credit.grn_credit_status)">
+                                                {{ credit.grn_credit_status }}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell class="text-right font-medium">
+                                            {{ formatCurrency(credit.total_amount) }}
+                                        </TableCell>
+                                        <TableCell class="text-right">
+                                            <Input 
+                                                type="number" 
+                                                step="0.01" 
+                                                v-model="credit.apply_amount"
+                                                :max="credit.total_amount"
+                                                min="0"
+                                                class="w-32 text-right"
+                                                :disabled="!credit.selected || isLoading"
+                                                @input="calculateCreditTotals"
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
                         </div>
                     </CardContent>
                 </Card>
