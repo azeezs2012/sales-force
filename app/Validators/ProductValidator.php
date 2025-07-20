@@ -39,6 +39,8 @@ class ProductValidator
                 'exists:accounts,id',
                 Rule::requiredIf(($data['inventory_type'] ?? null) === 'Inventory'),
             ],
+            'active' => 'boolean',
+            'approved' => 'boolean',
         ];
 
         $validator = Validator::make($data, $rules, [

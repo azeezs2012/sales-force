@@ -60,6 +60,7 @@ class GrnCreditController extends Controller
                     'quantity' => $detail['quantity'],
                     'cost' => $detail['cost'],
                     'total' => $detail['quantity'] * $detail['cost'],
+                    'description' => $detail['description'] ?? null,
                     'grn_detail_id' => $detail['grn_detail_id'] ?? null,
                 ]);
             }
@@ -188,6 +189,7 @@ class GrnCreditController extends Controller
                         'quantity' => $detail['quantity'],
                         'cost' => $detail['cost'],
                         'total' => $detail['quantity'] * $detail['cost'],
+                        'description' => $detail['description'] ?? null,
                         'grn_detail_id' => $detail['grn_detail_id'] ?? null,
                     ]
                 );

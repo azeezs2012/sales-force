@@ -75,6 +75,9 @@ class ProductSeeder implements ShouldQueue
                 'sales_account_id' => $salesAccount ? $salesAccount->id : 1,
                 'expense_account_id' => $expenseAccount ? $expenseAccount->id : 1,
                 'inventory_account_id' => $inventoryAccount ? $inventoryAccount->id : null,
+                'active' => true,
+                'approved' => true,
+                'approved_by' => 1,
                 'created_by' => 1,
             ]
         );

@@ -20,6 +20,7 @@ class GrnCreditDetail extends Model
         'quantity',
         'cost',
         'total',
+        'description',
         'grn_detail_id'
     ];
 

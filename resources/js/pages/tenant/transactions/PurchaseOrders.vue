@@ -44,7 +44,7 @@
                                 <TableHead>PO #</TableHead>
                                 <TableHead>Supplier</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead>Total</TableHead>
+                                <TableHead class="text-right">Total</TableHead>
                                 <TableHead class="w-[100px]">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -74,7 +74,7 @@
                                         {{ po.po_status }}
                                     </Badge>
                                 </TableCell>
-                                <TableCell>{{ formatCurrency(po.total_amount) }}</TableCell>
+                                <TableCell class="text-right font-mono">{{ formatCurrency(po.total_amount) }}</TableCell>
                                 <TableCell>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger as-child><Button variant="ghost" class="h-8 w-8 p-0"><MoreHorizontal class="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -164,24 +164,28 @@
                             <TableHeader>
                                 <TableRow>
                                     <TableHead class="w-2/5">Product</TableHead>
+                                    <TableHead>Description</TableHead>
                                     <TableHead>Location</TableHead>
-                                    <TableHead>Qty</TableHead>
-                                    <TableHead>Received</TableHead>
-                                    <TableHead>Remaining</TableHead>
-                                    <TableHead>Cost</TableHead>
-                                    <TableHead>Total</TableHead>
+                                    <TableHead class="text-right">Qty</TableHead>
+                                    <TableHead class="text-right">Received</TableHead>
+                                    <TableHead class="text-right">Remaining</TableHead>
+                                    <TableHead class="text-right">Cost</TableHead>
+                                    <TableHead class="text-right">Total</TableHead>
                                     <TableHead class="w-[50px]"></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 <TableRow v-for="(item, index) in form.details" :key="index">
                                     <TableCell>
-                                        <Select v-model="item.product_id" :disabled="!!item.received_quantity && item.received_quantity > 0">
+                                        <Select v-model="item.product_id" :disabled="!!item.received_quantity && item.received_quantity > 0" @update:model-value="onProductSelect(item)">
                                             <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem v-for="p in products" :key="p.id" :value="p.id">{{ p.product_name }}</SelectItem>
                                             </SelectContent>
                                         </Select>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Input v-model="item.description" placeholder="Description" />
                                     </TableCell>
                                     <TableCell>
                                         <Select v-model="item.location_id" :disabled="!!item.received_quantity && item.received_quantity > 0">
@@ -197,21 +201,33 @@
                                             type="number" 
                                             placeholder="Qty" 
                                             :min="item.received_quantity || 1"
+                                            step="1"
+                                            class="text-right"
                                             @input="updateTotal(item)"
                                         />
                                     </TableCell>
                                     <TableCell>
-                                        <div class="text-sm text-muted-foreground">
+                                        <div class="text-sm text-muted-foreground text-right">
                                             {{ item.received_quantity || 0 }}
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <div class="text-sm text-muted-foreground">
+                                        <div class="text-sm text-muted-foreground text-right">
                                             {{ calculateRemainingQuantity(item) }}
                                         </div>
                                     </TableCell>
-                                    <TableCell><Input v-model="item.cost" type="number" placeholder="Cost" @input="updateTotal(item)"/></TableCell>
-                                    <TableCell>{{ formatCurrency(item.total) }}</TableCell>
+                                    <TableCell>
+                                        <Input 
+                                            v-model="item.cost" 
+                                            type="number" 
+                                            placeholder="0.00" 
+                                            step="0.01"
+                                            min="0"
+                                            class="text-right"
+                                            @input="updateTotal(item)"
+                                        />
+                                    </TableCell>
+                                    <TableCell class="text-right font-mono">{{ formatCurrency(item.total) }}</TableCell>
                                     <TableCell>
                                         <Button 
                                             variant="destructive" 
@@ -280,7 +296,7 @@ import { ref, onMounted, computed } from 'vue';
 import type { Ref } from 'vue';
 import axios from 'axios';
 import { useToast } from '@/components/ui/toast/use-toast';
-import { MoreHorizontal, Trash } from 'lucide-vue-next';
+import { MoreHorizontal, Trash, X } from 'lucide-vue-next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -299,7 +315,7 @@ const breadcrumbs = [{ title: 'Purchase Orders', href: '/purchase-orders' }];
 interface User { id: string; name: string; }
 interface Supplier { id: string; user: User; }
 interface Location { id: string; location_name: string; }
-interface Product { id: string; product_name: string; }
+interface Product { id: string; product_name: string; cost?: number; product_description?: string; }
 interface PurchaseOrderDetail {
     id?: string;
     product_id: string;
@@ -307,6 +323,7 @@ interface PurchaseOrderDetail {
     quantity: number;
     cost: number;
     total: number;
+    description?: string;
     received_quantity?: number;
     remaining_quantity?: number;
 }
@@ -416,6 +433,7 @@ const showCreateForm = () => {
         quantity: 1, 
         cost: 0, 
         total: 0,
+        description: '',
         received_quantity: 0,
         remaining_quantity: 1
     };
@@ -436,6 +454,7 @@ const addDetail = () => {
         quantity: 1, 
         cost: 0, 
         total: 0,
+        description: '',
         received_quantity: 0,
         remaining_quantity: 1
     };
@@ -449,6 +468,25 @@ const updateTotal = (item: PurchaseOrderDetail) => {
     item.total = (Number(item.quantity) || 0) * (Number(item.cost) || 0);
     // Update remaining quantity in real-time
     item.remaining_quantity = calculateRemainingQuantity(item);
+};
+
+// Auto-fill product data when product is selected
+const onProductSelect = (item: PurchaseOrderDetail) => {
+    if (item.product_id) {
+        const selectedProduct = products.value.find(p => p.id === item.product_id);
+        if (selectedProduct) {
+            // Auto-fill cost if available
+            if (selectedProduct.cost) {
+                item.cost = Number(selectedProduct.cost);
+            }
+            // Auto-fill description if available (you might want to add this field to the product interface)
+            if (selectedProduct.product_description) {
+                item.description = selectedProduct.product_description;
+            }
+            // Update total after auto-filling
+            updateTotal(item);
+        }
+    }
 };
 
 const calculateRemainingQuantity = (item: PurchaseOrderDetail) => {
@@ -521,4 +559,4 @@ onMounted(() => {
     fetchPOs();
     fetchDropdownData();
 });
-</script> 
+</script>

@@ -29,6 +29,7 @@ class PurchaseOrderValidator
             'details.*.quantity' => 'required|numeric|min:1',
             'details.*.cost' => 'required|numeric|min:0',
             'details.*.location_id' => 'nullable|exists:locations,id',
+            'details.*.description' => 'nullable|string',
         ];
 
         $messages = [

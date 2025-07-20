@@ -37,6 +37,7 @@ class GrnCreditValidator extends FormRequest
             'details.*.location_id' => 'required|exists:locations,id',
             'details.*.quantity' => 'required|numeric|min:0.01|max:999999',
             'details.*.cost' => 'required|numeric|min:0',
+            'details.*.description' => 'nullable|string',
             'details.*.grn_detail_id' => 'nullable|exists:grn_details,id',
         ];
     }

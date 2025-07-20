@@ -21,6 +21,7 @@ class GrnDetail extends Model
         'quantity',
         'cost',
         'total',
+        'description',
         'purchase_order_detail_id'
     ];
 

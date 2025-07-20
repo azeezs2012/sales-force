@@ -25,7 +25,7 @@ const breadcrumbs = [{ title: 'GRN Credits', href: '/grn-credits' }];
 interface User { id: string; name: string; }
 interface Supplier { id: string; user: User; }
 interface Location { id: string; location_name: string; }
-interface Product { id: string; product_name: string; }
+interface Product { id: string; product_name: string; cost?: number; product_description?: string; }
 interface Account { id: string; account_name: string; }
 interface GrnCreditDetail {
     id?: string;
@@ -34,6 +34,7 @@ interface GrnCreditDetail {
     quantity: number;
     cost: number;
     total: number;
+    description?: string;
     grn_detail_id?: string;
     product?: Product;
     original_grn_quantity?: number;
@@ -235,6 +236,7 @@ const addDetailRow = () => {
         quantity: 1,
         cost: 0,
         total: 0,
+        description: '',
         grn_detail_id: null,
         product: null,
         original_grn_quantity: 0,
@@ -245,6 +247,23 @@ const addDetailRow = () => {
 
 const removeDetailRow = (index) => {
     form.details.splice(index, 1);
+};
+
+// Auto-fill product data when product is selected
+const onProductSelect = (item) => {
+    if (item.product_id) {
+        const selectedProduct = products.value.find(p => p.id === item.product_id);
+        if (selectedProduct) {
+            // Auto-fill cost if available
+            if (selectedProduct.cost) {
+                item.cost = Number(selectedProduct.cost);
+            }
+            // Auto-fill description if available
+            if (selectedProduct.product_description) {
+                item.description = selectedProduct.product_description;
+            }
+        }
+    }
 };
 
 const showCreateForm = () => {
@@ -386,7 +405,7 @@ const filteredGrnCredits = computed(() => {
                                 <TableHead>GRN Credit #</TableHead>
                                 <TableHead>Supplier</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead>Total</TableHead>
+                                <TableHead class="text-right">Total</TableHead>
                                 <TableHead class="w-[100px]">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -416,7 +435,7 @@ const filteredGrnCredits = computed(() => {
                                         {{ credit.grn_credit_status }}
                                     </Badge>
                                 </TableCell>
-                                <TableCell>{{ formatCurrency(credit.total_amount) }}</TableCell>
+                                <TableCell class="text-right font-mono">{{ formatCurrency(credit.total_amount) }}</TableCell>
                                 <TableCell>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger as-child><Button variant="ghost" class="h-8 w-8 p-0"><MoreHorizontal class="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -520,18 +539,19 @@ const filteredGrnCredits = computed(() => {
                                 <TableRow>
                                     <TableHead class="w-2/5">Product</TableHead>
                                     <TableHead>Location</TableHead>
-                                    <TableHead>Qty</TableHead>
-                                    <TableHead>Cost</TableHead>
-                                    <TableHead>Total</TableHead>
+                                    <TableHead class="text-right">Qty</TableHead>
+                                    <TableHead class="text-right">Cost</TableHead>
+                                    <TableHead class="text-right">Total</TableHead>
                                     <TableHead>GRN Line ID</TableHead>
-                                    <TableHead>Original GRN Qty</TableHead>
+                                    <TableHead class="text-right">Original GRN Qty</TableHead>
+                                    <TableHead>Description</TableHead>
                                     <TableHead class="w-[50px]"></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 <TableRow v-for="(item, index) in form.details" :key="index">
                                     <TableCell>
-                                        <Select v-model="item.product_id" :disabled="!!item.grn_detail_id">
+                                        <Select v-model="item.product_id" :disabled="!!item.grn_detail_id" @update:model-value="onProductSelect(item)">
                                             <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem v-if="item.product" :value="item.product.id" >{{ item.product.product_name }}</SelectItem>
@@ -554,6 +574,8 @@ const filteredGrnCredits = computed(() => {
                                             placeholder="Qty"
                                             :min="1"
                                             :max="item.grn_detail_id ? item.available_quantity : undefined"
+                                            step="1"
+                                            class="text-right"
                                             @input="
                                                 if (item.grn_detail_id && Number(item.quantity) > item.available_quantity) {
                                                     item.quantity = item.available_quantity;
@@ -562,10 +584,20 @@ const filteredGrnCredits = computed(() => {
                                             "
                                         />
                                     </TableCell>
-                                    <TableCell><Input v-model="item.cost" type="number" placeholder="Cost"/></TableCell>
-                                    <TableCell>{{ formatCurrency(item.quantity * item.cost) }}</TableCell>
+                                    <TableCell>
+                                        <Input 
+                                            v-model="item.cost" 
+                                            type="number" 
+                                            placeholder="0.00" 
+                                            step="0.01"
+                                            min="0"
+                                            class="text-right"
+                                        />
+                                    </TableCell>
+                                    <TableCell class="text-right font-mono">{{ formatCurrency(item.quantity * item.cost) }}</TableCell>
                                     <TableCell>{{ item.grn_detail_id || '-' }}</TableCell>
-                                    <TableCell>{{ item.original_grn_quantity !== undefined ? item.original_grn_quantity : '-' }}</TableCell>
+                                    <TableCell class="text-right">{{ item.original_grn_quantity !== undefined ? item.original_grn_quantity : '-' }}</TableCell>
+                                    <TableCell><Input v-model="item.description" placeholder="Description" /></TableCell>
                                     <TableCell><Button variant="destructive" size="sm" @click="removeDetailRow(index)"><Trash2 class="h-4 w-4" /></Button></TableCell>
                                 </TableRow>
                             </TableBody>

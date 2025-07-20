@@ -58,6 +58,7 @@ class GrnController extends Controller
                     'quantity' => $detail['quantity'],
                     'cost' => $detail['cost'],
                     'total' => $detail['quantity'] * $detail['cost'],
+                    'description' => $detail['description'] ?? null,
                     'purchase_order_detail_id' => $detail['purchase_order_detail_id'] ?? null,
                 ]);
 
@@ -160,6 +161,7 @@ class GrnController extends Controller
                         'quantity' => $detail['quantity'],
                         'cost' => $detail['cost'],
                         'total' => $detail['quantity'] * $detail['cost'],
+                        'description' => $detail['description'] ?? null,
                         'purchase_order_detail_id' => $detail['purchase_order_detail_id'] ?? null,
                     ]
                 );

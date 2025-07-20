@@ -23,9 +23,19 @@ class Product extends Model
         'sales_account_id',
         'expense_account_id',
         'inventory_account_id',
+        'active',
+        'approved',
+        'approved_by',
         'created_by',
         'updated_by',
         'deleted_by',
+    ];
+
+    protected $casts = [
+        'active' => 'boolean',
+        'approved' => 'boolean',
+        'cost' => 'decimal:2',
+        'price' => 'decimal:2',
     ];
 
     public function parent()
@@ -76,5 +86,10 @@ class Product extends Model
     public function deleter()
     {
         return $this->belongsTo(User::class, 'deleted_by');
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 } 

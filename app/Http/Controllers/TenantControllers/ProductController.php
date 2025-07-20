@@ -34,12 +34,18 @@ class ProductController extends Controller
 
         $product = new Product($request->all());
         $product->created_by = auth()->id();
+        
+        // Set approved_by if product is approved
+        if ($product->approved) {
+            $product->approved_by = auth()->id();
+        }
+        
         $product->save();
 
         return response()->json($product->load([
             'parent', 'children', 'productType', 'productCategory',
             'salesAccount', 'expenseAccount', 'inventoryAccount',
-            'creator', 'updater'
+            'creator', 'updater', 'approver'
         ]), 201);
     }
 
@@ -48,7 +54,7 @@ class ProductController extends Controller
         $product = Product::with([
             'parent', 'children', 'productType', 'productCategory',
             'salesAccount', 'expenseAccount', 'inventoryAccount',
-            'creator', 'updater'
+            'creator', 'updater', 'approver'
         ])->findOrFail($id);
 
         return response()->json($product);
@@ -70,12 +76,18 @@ class ProductController extends Controller
 
         $product->fill($request->all());
         $product->updated_by = auth()->id();
+        
+        // Set approved_by if product is being approved
+        if ($product->approved && !$product->approved_by) {
+            $product->approved_by = auth()->id();
+        }
+        
         $product->save();
 
         return response()->json($product->load([
             'parent', 'children', 'productType', 'productCategory',
             'salesAccount', 'expenseAccount', 'inventoryAccount',
-            'creator', 'updater'
+            'creator', 'updater', 'approver'
         ]));
     }
 
