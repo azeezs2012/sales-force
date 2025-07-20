@@ -12,6 +12,7 @@ use App\Models\TenantModels\Supplier;
 use App\Models\TenantModels\PaymentMethod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class GrnPaymentController extends Controller
 {
@@ -20,25 +21,33 @@ class GrnPaymentController extends Controller
      */
     public function index()
     {
-        $payments = Payment::with(['supplier.user'])
-            ->latest()
-            ->get()
-            ->map(function ($payment) {
-                return [
-                    'id' => $payment->id,
-                    'payment_date' => $payment->payment_date,
-                    'supplier_id' => $payment->supplier_id,
-                    'payment_method_id' => null, // Payment model stores payment_method as string
-                    'payment_amount' => $payment->payment_amount,
-                    'payment_reference' => $payment->payment_reference,
-                    'payment_notes' => $payment->payment_notes,
-                    'payment_status' => $payment->payment_status,
-                    'supplier' => $payment->supplier,
-                    'payment_method' => ['payment_method_name' => $payment->payment_method || 'Unknown'],
-                ];
-            });
+        try {
+            $payments = Payment::with(['supplier.user'])
+                ->latest()
+                ->get()
+                ->map(function ($payment) {
+                    return [
+                        'id' => $payment->id,
+                        'payment_date' => $payment->payment_date,
+                        'supplier_id' => $payment->supplier_id,
+                        'payment_method_id' => null, // Payment model stores payment_method as string
+                        'payment_amount' => $payment->payment_amount,
+                        'payment_reference' => $payment->payment_reference,
+                        'payment_notes' => $payment->payment_notes,
+                        'payment_status' => $payment->payment_status,
+                        'supplier' => $payment->supplier,
+                        'payment_method' => ['payment_method_name' => $payment->payment_method || 'Unknown'],
+                    ];
+                });
 
-        return response()->json($payments);
+            return response()->json($payments);
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch GRN payments', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['message' => 'Failed to fetch payments.'], 500);
+        }
     }
 
     /**
@@ -46,38 +55,46 @@ class GrnPaymentController extends Controller
      */
     public function show($id)
     {
-        $payment = Payment::with(['supplier.user', 'settlements.grnSummary'])
-            ->findOrFail($id);
+        try {
+            $payment = Payment::with(['supplier.user'])
+                ->findOrFail($id);
 
-        // Get GRN applications from settlements
-        $grnApplications = GrnSettlement::where('settlement_reference_type', 'payments')
-            ->where('settlement_reference_id', $payment->id)
-            ->get()
-            ->groupBy('grn_summary_id')
-            ->map(function ($settlements) {
-                $applyPayment = $settlements->where('settlement_type', 'payment')->sum('settlement_amount');
-                $applyCredits = $settlements->where('settlement_type', 'grn_credit')->sum('settlement_amount');
-                
-                return [
-                    'grn_id' => $settlements->first()->grn_summary_id,
-                    'apply_payment' => $applyPayment,
-                    'apply_credits' => $applyCredits,
-                ];
-            })
-            ->values()
-            ->toArray();
+            // Get GRN applications from settlements with optimized query
+            $grnApplications = GrnSettlement::select('grn_summary_id')
+                ->selectRaw('SUM(CASE WHEN settlement_type = "payment" THEN settlement_amount ELSE 0 END) as apply_payment')
+                ->selectRaw('SUM(CASE WHEN settlement_type = "grn_credit" THEN settlement_amount ELSE 0 END) as apply_credits')
+                ->where('settlement_reference_type', 'payments')
+                ->where('settlement_reference_id', $payment->id)
+                ->groupBy('grn_summary_id')
+                ->get()
+                ->map(function ($settlement) {
+                    return [
+                        'grn_id' => $settlement->grn_summary_id,
+                        'apply_payment' => floatval($settlement->apply_payment),
+                        'apply_credits' => floatval($settlement->apply_credits),
+                    ];
+                })
+                ->toArray();
 
-        // Get credit applications from GRN credit settlements
-        $creditApplications = GrnCreditSettlement::where('settlement_reference_type', 'payments')
-            ->where('settlement_reference_id', $payment->id)
-            ->pluck('grn_credit_summary_id')
-            ->toArray();
+            // Get credit applications from GRN credit settlements
+            $creditApplications = GrnCreditSettlement::where('settlement_reference_type', 'payments')
+                ->where('settlement_reference_id', $payment->id)
+                ->pluck('grn_credit_summary_id')
+                ->toArray();
 
-        $paymentData = $payment->toArray();
-        $paymentData['grn_applications'] = $grnApplications;
-        $paymentData['credit_applications'] = $creditApplications;
+            $paymentData = $payment->toArray();
+            $paymentData['grn_applications'] = $grnApplications;
+            $paymentData['credit_applications'] = $creditApplications;
 
-        return response()->json($paymentData);
+            return response()->json($paymentData);
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch GRN payment details', [
+                'payment_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['message' => 'Failed to fetch payment details.'], 500);
+        }
     }
 
     /**
@@ -89,7 +106,7 @@ class GrnPaymentController extends Controller
             'payment_date' => 'required|date',
             'payment_method_id' => 'required|exists:payment_methods,id',
             'payment_amount' => 'required|numeric|min:0.01',
-            'payment_reference' => 'nullable|string',
+            'payment_reference' => 'nullable|string|max:255',
             'payment_notes' => 'nullable|string',
             'grn_applications' => 'array',
             'grn_applications.*.grn_id' => 'required|exists:grn_summaries,id',
@@ -98,6 +115,9 @@ class GrnPaymentController extends Controller
             'credit_applications' => 'array',
             'credit_applications.*' => 'exists:grn_credit_summaries,id',
         ]);
+
+        // Additional validation
+        $this->validatePaymentApplications($request);
 
         DB::beginTransaction();
         try {
@@ -144,6 +164,11 @@ class GrnPaymentController extends Controller
                     $applyCredits = floatval($application['apply_credits']);
 
                     if ($applyPayment > 0) {
+                        // Validate payment amount doesn't exceed remaining balance
+                        if ($applyPayment > $grn->remaining_amount) {
+                            throw new \Exception("Payment amount exceeds remaining balance for GRN #{$grn->id}");
+                        }
+
                         // Create payment settlement
                         GrnSettlement::create([
                             'grn_summary_id' => $grn->id,
@@ -160,6 +185,11 @@ class GrnPaymentController extends Controller
                     }
 
                     if ($applyCredits > 0) {
+                        // Validate credit amount doesn't exceed remaining balance
+                        if ($applyCredits > $grn->remaining_amount) {
+                            throw new \Exception("Credit amount exceeds remaining balance for GRN #{$grn->id}");
+                        }
+
                         // Create credit settlement
                         GrnSettlement::create([
                             'grn_summary_id' => $grn->id,
@@ -182,8 +212,13 @@ class GrnPaymentController extends Controller
                 foreach ($request->credit_applications as $creditId) {
                     $credit = GrnCreditSummary::find($creditId);
                     
+                    // Validate credit is available for application
+                    if ($credit->remaining_amount <= 0) {
+                        throw new \Exception("Credit #{$credit->id} has no remaining amount to apply");
+                    }
+                    
                     // Calculate how much of this credit to apply
-                    $creditAmountToApply = $credit->total_amount; // For now, apply full amount
+                    $creditAmountToApply = $credit->remaining_amount; // Apply full remaining amount
                     
                     // Create GRN credit settlement record
                     GrnCreditSettlement::create([
@@ -223,6 +258,46 @@ class GrnPaymentController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Failed to update payment.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Validate payment applications
+     */
+    private function validatePaymentApplications(Request $request)
+    {
+        $totalAppliedPayment = 0;
+        $totalAppliedCredits = 0;
+
+        // Calculate total applied amounts
+        if (!empty($request->grn_applications)) {
+            foreach ($request->grn_applications as $application) {
+                $totalAppliedPayment += floatval($application['apply_payment']);
+                $totalAppliedCredits += floatval($application['apply_credits']);
+            }
+        }
+
+        // Validate that total applied doesn't exceed payment amount
+        $paymentAmount = floatval($request->payment_amount);
+        if (($totalAppliedPayment + $totalAppliedCredits) > $paymentAmount) {
+            throw new \Exception('Total applied amount cannot exceed payment amount');
+        }
+
+        // Validate individual GRN applications
+        if (!empty($request->grn_applications)) {
+            foreach ($request->grn_applications as $application) {
+                $grn = GrnSummary::find($application['grn_id']);
+                $applyPayment = floatval($application['apply_payment']);
+                $applyCredits = floatval($application['apply_credits']);
+
+                if ($applyPayment > $grn->remaining_amount) {
+                    throw new \Exception("Payment amount exceeds remaining balance for GRN #{$grn->id}");
+                }
+
+                if ($applyCredits > $grn->remaining_amount) {
+                    throw new \Exception("Credit amount exceeds remaining balance for GRN #{$grn->id}");
+                }
+            }
         }
     }
 
@@ -436,7 +511,7 @@ class GrnPaymentController extends Controller
             'payment_date' => 'required|date',
             'payment_method_id' => 'required|exists:payment_methods,id',
             'payment_amount' => 'required|numeric|min:0.01',
-            'payment_reference' => 'nullable|string',
+            'payment_reference' => 'nullable|string|max:255',
             'payment_notes' => 'nullable|string',
             'grn_applications' => 'array',
             'grn_applications.*.grn_id' => 'required|exists:grn_summaries,id',
@@ -445,6 +520,9 @@ class GrnPaymentController extends Controller
             'credit_applications' => 'array',
             'credit_applications.*' => 'exists:grn_credit_summaries,id',
         ]);
+
+        // Additional validation
+        $this->validatePaymentApplications($request);
 
         DB::beginTransaction();
         try {
@@ -491,6 +569,11 @@ class GrnPaymentController extends Controller
                 $applyCredits = floatval($application['apply_credits']);
 
                 if ($applyPayment > 0) {
+                    // Validate payment amount doesn't exceed remaining balance
+                    if ($applyPayment > $grn->remaining_amount) {
+                        throw new \Exception("Payment amount exceeds remaining balance for GRN #{$grn->id}");
+                    }
+
                     // Create payment settlement
                     GrnSettlement::create([
                         'grn_summary_id' => $grn->id,
@@ -507,6 +590,11 @@ class GrnPaymentController extends Controller
                 }
 
                 if ($applyCredits > 0) {
+                    // Validate credit amount doesn't exceed remaining balance
+                    if ($applyCredits > $grn->remaining_amount) {
+                        throw new \Exception("Credit amount exceeds remaining balance for GRN #{$grn->id}");
+                    }
+
                     // Create credit settlement
                     GrnSettlement::create([
                         'grn_summary_id' => $grn->id,
@@ -531,8 +619,13 @@ class GrnPaymentController extends Controller
                 foreach ($request->credit_applications as $creditId) {
                     $credit = GrnCreditSummary::find($creditId);
                     
+                    // Validate credit is available for application
+                    if ($credit->remaining_amount <= 0) {
+                        throw new \Exception("Credit #{$credit->id} has no remaining amount to apply");
+                    }
+                    
                     // Calculate how much of this credit to apply
-                    $creditAmountToApply = $credit->total_amount; // For now, apply full amount
+                    $creditAmountToApply = $credit->remaining_amount; // Apply full remaining amount
                     
                     // Create GRN credit settlement record
                     GrnCreditSettlement::create([

@@ -52,6 +52,8 @@ const grnPaymentToDelete = ref(null);
 
 const selectedSupplier = ref(null);
 const isCreating = ref(false);
+const isLoading = ref(false);
+const isFetchingData = ref(false);
 
 const form = useForm({
     id: null,
@@ -67,18 +69,26 @@ const form = useForm({
 
 const fetchGrnPayments = async () => {
     try {
+        isFetchingData.value = true;
         console.log('Fetching GRN Payments...');
         const response = await axios.get('/api/grn-payments');
         console.log('GRN Payments response:', response.data);
         grnPayments.value = response.data;
     } catch (error) {
         console.error('Error fetching GRN Payments:', error);
-        toast({ title: 'Error', description: 'Failed to fetch GRN Payments.', variant: 'destructive' });
+        toast({ 
+            title: 'Error', 
+            description: error.response?.data?.message || 'Failed to fetch GRN Payments.', 
+            variant: 'destructive' 
+        });
+    } finally {
+        isFetchingData.value = false;
     }
 };
 
 const fetchDropdownData = async () => {
     try {
+        isLoading.value = true;
         const [supplierRes, methodRes] = await Promise.all([
             axios.get('/api/suppliers'),
             axios.get('/api/payment-methods')
@@ -87,7 +97,13 @@ const fetchDropdownData = async () => {
         paymentMethods.value = methodRes.data;
     } catch (error) {
         console.log(error);
-        toast({ title: 'Error', description: 'Failed to fetch dropdown data.', variant: 'destructive' });
+        toast({ 
+            title: 'Error', 
+            description: error.response?.data?.message || 'Failed to fetch dropdown data.', 
+            variant: 'destructive' 
+        });
+    } finally {
+        isLoading.value = false;
     }
 };
 
@@ -195,6 +211,7 @@ const saveGrnPayment = async () => {
     const url = isEditing.value ? `/api/grn-payments/${form.id}` : '/api/grn-payments';
 
     try {
+        isCreating.value = true;
         let payload;
         
         if (isEditing.value) {
@@ -228,6 +245,8 @@ const saveGrnPayment = async () => {
     } catch (error) {
         const errorMessage = error.response?.data?.message || `Failed to ${isEditing.value ? 'update' : 'create'} GRN Payment.`;
         toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
+    } finally {
+        isCreating.value = false;
     }
 };
 
@@ -245,12 +264,14 @@ const confirmDelete = async () => {
     if (!grnPaymentToDelete.value) return;
     
     try {
+        isCreating.value = true;
         await axios.delete(`/api/grn-payments/${grnPaymentToDelete.value.id}`);
         toast({ title: 'Success', description: 'GRN Payment deleted successfully.' });
         fetchGrnPayments();
     } catch (error) {
         toast({ title: 'Error', description: 'Failed to delete GRN Payment.', variant: 'destructive' });
     } finally {
+        isCreating.value = false;
         hideDeleteConfirm();
     }
 };
@@ -265,6 +286,10 @@ const onSupplierChange = async () => {
     
     try {
         console.log('onSupplierChange - isEditing:', isEditing.value, 'form.id:', form.id, 'selectedSupplier:', selectedSupplier.value);
+        
+        // Show loading state
+        isLoading.value = true;
+        
         // Load GRNs for the supplier - use all GRNs when editing, open GRNs when creating
         const endpoint = isEditing.value ? 'all-grns' : 'open-grns';
         let url;
@@ -303,13 +328,21 @@ const onSupplierChange = async () => {
         if (!isEditing.value) {
             autoApplyPayment();
         }
+        
+        // Show success message
+        toast({
+            title: 'Success',
+            description: `Loaded ${openGrns.value.length} GRNs and ${availableCredits.value.length} credits`,
+        });
     } catch (error) {
         toast({
             title: 'Error',
-            description: 'Failed to load supplier data',
+            description: error.response?.data?.message || 'Failed to load supplier data',
             variant: 'destructive',
         });
         console.error(error);
+    } finally {
+        isLoading.value = false;
     }
 };
 
@@ -321,13 +354,29 @@ const autoApplyPayment = () => {
     const paymentAmount = parseFloat(form.payment_amount) || 0;
     let remainingAmount = paymentAmount;
 
-    // Sort GRNs by date (oldest first)
-    const sortedGrns = [...openGrns.value].sort((a, b) => new Date(a.grn_date) - new Date(b.grn_date));
+    // Reset all applications first
+    openGrns.value.forEach(grn => {
+        grn.apply_payment = 0;
+        grn.apply_credits = 0;
+    });
+
+    // Sort GRNs by date (oldest first) and status (Open first, then Partial)
+    const sortedGrns = [...openGrns.value].sort((a, b) => {
+        // First sort by status (Open before Partial)
+        const statusOrder = { 'Open': 0, 'Partial': 1, 'Closed': 2 };
+        const statusDiff = (statusOrder[a.grn_status] || 0) - (statusOrder[b.grn_status] || 0);
+        if (statusDiff !== 0) return statusDiff;
+        
+        // Then sort by date (oldest first)
+        return new Date(a.grn_date) - new Date(b.grn_date);
+    });
 
     for (const grn of sortedGrns) {
-        if (remainingAmount <= 0) break
+        if (remainingAmount <= 0) break;
         
         const balanceDue = parseFloat(grn.balance_due);
+        if (balanceDue <= 0) continue;
+        
         const applyAmount = Math.min(remainingAmount, balanceDue);
         
         grn.apply_payment = applyAmount;
@@ -342,6 +391,18 @@ const calculateGrnTotals = () => {
         const balanceDue = parseFloat(grn.balance_due);
         const applyPayment = parseFloat(grn.apply_payment) || 0;
         const applyCredits = parseFloat(grn.apply_credits) || 0;
+        
+        // Validate that applications don't exceed balance due
+        const totalApplied = applyPayment + applyCredits;
+        if (totalApplied > balanceDue) {
+            // Adjust if over-applied
+            if (applyPayment > balanceDue) {
+                grn.apply_payment = balanceDue;
+                grn.apply_credits = 0;
+            } else {
+                grn.apply_credits = Math.max(0, balanceDue - applyPayment);
+            }
+        }
         
         grn.final_balance = Math.max(0, balanceDue - applyPayment - applyCredits);
     });
@@ -359,7 +420,25 @@ const selectAllCredits = computed({
 });
 
 const createPayment = async () => {
-    if (!canCreatePayment.value) return;
+    if (!canCreatePayment.value) {
+        toast({
+            title: 'Validation Error',
+            description: 'Please fill in all required fields and ensure payment amount is applied.',
+            variant: 'destructive',
+        });
+        return;
+    }
+
+    // Validate payment amount vs applied amount
+    const totalApplied = totalAppliedPayment.value + totalAppliedCredits.value;
+    if (totalApplied <= 0) {
+        toast({
+            title: 'Validation Error',
+            description: 'Please apply payment amount to at least one GRN or select credits.',
+            variant: 'destructive',
+        });
+        return;
+    }
 
     isCreating.value = true;
     
@@ -388,7 +467,7 @@ const createPayment = async () => {
         if (response.status === 200 || response.status === 201) {
             toast({
                 title: 'Success',
-                description: 'Payment created successfully',
+                description: `Payment created successfully. Applied: ${formatCurrency(totalApplied)}`,
             });
             hideForm();
             fetchGrnPayments();
@@ -405,7 +484,7 @@ const createPayment = async () => {
     }
 };
 
-// Computed properties
+// Enhanced computed properties
 const totalAppliedPayment = computed(() => {
     return openGrns.value.reduce((sum, grn) => sum + (parseFloat(grn.apply_payment) || 0), 0);
 });
@@ -432,7 +511,8 @@ const canCreatePayment = computed(() => {
     return selectedSupplier.value && 
            form.payment_amount > 0 && 
            form.payment_method_id &&
-           (totalAppliedPayment.value > 0 || totalAppliedCredits.value > 0);
+           (totalAppliedPayment.value > 0 || totalAppliedCredits.value > 0) &&
+           unappliedAmount.value >= 0; // Ensure we don't over-apply
 });
 
 const getCreditStatusVariant = (status) => {
@@ -487,7 +567,18 @@ const isPaymentPartial = computed(() => form.payment_status === 'Partial');
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            <TableRow v-for="payment in grnPayments" :key="payment.id">
+                            <TableRow v-if="isFetchingData">
+                                <TableCell colspan="7" class="h-24 text-center">
+                                    <div class="flex items-center justify-center space-x-2">
+                                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                        <span>Loading payments...</span>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                            <TableRow v-else-if="grnPayments.length === 0">
+                                <TableCell colspan="7" class="h-24 text-center">No GRN payments found.</TableCell>
+                            </TableRow>
+                            <TableRow v-else v-for="payment in grnPayments" :key="payment.id">
                                 <TableCell>{{ formatDate(payment.payment_date) }}</TableCell>
                                 <TableCell>PAY-{{ payment.id }}</TableCell>
                                 <TableCell>{{ payment.supplier?.user?.name }}</TableCell>
@@ -510,9 +601,6 @@ const isPaymentPartial = computed(() => form.payment_status === 'Partial');
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
-                            </TableRow>
-                            <TableRow v-if="grnPayments.length === 0">
-                                <TableCell colspan="7" class="h-24 text-center">No GRN payments found.</TableCell>
                             </TableRow>
                         </TableBody>
                     </Table>
@@ -587,9 +675,21 @@ const isPaymentPartial = computed(() => form.payment_status === 'Partial');
 
                 <!-- Open GRNs Table -->
                 <Card v-if="selectedSupplier && openGrns.length > 0">
-                    <CardHeader><CardTitle>Open GRNs</CardTitle></CardHeader>
+                    <CardHeader>
+                        <CardTitle>Open GRNs</CardTitle>
+                        <div v-if="isLoading" class="flex items-center space-x-2 text-sm text-muted-foreground">
+                            <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
+                            <span>Loading GRNs...</span>
+                        </div>
+                    </CardHeader>
                     <CardContent>
-                        <Table>
+                        <div v-if="isLoading" class="flex items-center justify-center h-32">
+                            <div class="flex items-center space-x-2">
+                                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                                <span>Loading GRNs...</span>
+                            </div>
+                        </div>
+                        <Table v-else>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>GRN Date</TableHead>
@@ -618,6 +718,7 @@ const isPaymentPartial = computed(() => form.payment_status === 'Partial');
                                             class="w-24 text-right"
                                             :max="grn.balance_due"
                                             min="0"
+                                            :disabled="isLoading"
                                         />
                                     </TableCell>
                                     <TableCell class="text-right">
@@ -629,6 +730,7 @@ const isPaymentPartial = computed(() => form.payment_status === 'Partial');
                                             class="w-24 text-right"
                                             :max="grn.balance_due"
                                             min="0"
+                                            :disabled="isLoading"
                                         />
                                     </TableCell>
                                     <TableCell class="text-right font-medium">
@@ -642,13 +744,26 @@ const isPaymentPartial = computed(() => form.payment_status === 'Partial');
 
                 <!-- Available GRN Credits -->
                 <Card v-if="selectedSupplier && availableCredits.length > 0">
-                    <CardHeader><CardTitle>Available GRN Credits</CardTitle></CardHeader>
+                    <CardHeader>
+                        <CardTitle>Available GRN Credits</CardTitle>
+                        <div v-if="isLoading" class="flex items-center space-x-2 text-sm text-muted-foreground">
+                            <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
+                            <span>Loading credits...</span>
+                        </div>
+                    </CardHeader>
                     <CardContent>
-                        <div class="space-y-4">
+                        <div v-if="isLoading" class="flex items-center justify-center h-32">
+                            <div class="flex items-center space-x-2">
+                                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                                <span>Loading credits...</span>
+                            </div>
+                        </div>
+                        <div v-else class="space-y-4">
                             <div class="flex items-center space-x-2">
                                 <Checkbox 
                                     id="select_all_credits" 
                                     v-model="selectAllCredits"
+                                    :disabled="isLoading"
                                 />
                                 <Label for="select_all_credits">Select All Credits</Label>
                             </div>
@@ -660,6 +775,7 @@ const isPaymentPartial = computed(() => form.payment_status === 'Partial');
                                             <Checkbox 
                                                 :id="`credit_${credit.id}`" 
                                                 v-model="credit.selected"
+                                                :disabled="isLoading"
                                             />
                                             <div>
                                                 <p class="font-medium">Credit #{{ credit.id }}</p>
@@ -731,10 +847,31 @@ const isPaymentPartial = computed(() => form.payment_status === 'Partial');
                 </Card>
 
                 <div class="flex justify-between items-center p-4 rounded-lg bg-card border">
-                    <div><CardTitle>Payment Summary</CardTitle></div>
+                    <div>
+                        <CardTitle>Payment Summary</CardTitle>
+                        <div v-if="unappliedAmount < 0" class="text-sm text-red-600 mt-1">
+                            ⚠️ Payment amount exceeds applied amount by {{ formatCurrency(Math.abs(unappliedAmount)) }}
+                        </div>
+                        <div v-else-if="unappliedAmount > 0" class="text-sm text-orange-600 mt-1">
+                            ℹ️ {{ formatCurrency(unappliedAmount) }} remains unapplied
+                        </div>
+                        <div v-else class="text-sm text-green-600 mt-1">
+                            ✅ Payment fully applied
+                        </div>
+                    </div>
                     <div class="flex gap-2">
-                        <Button variant="outline" @click="hideForm">Cancel</Button>
-                        <Button @click="saveGrnPayment" :disabled="!canCreatePayment" :loading="isCreating">{{ isEditing ? 'Update Payment' : 'Create Payment' }}</Button>
+                        <Button variant="outline" @click="hideForm" :disabled="isCreating">Cancel</Button>
+                        <Button 
+                            @click="saveGrnPayment" 
+                            :disabled="!canCreatePayment || isCreating" 
+                            :loading="isCreating"
+                        >
+                            <div v-if="isCreating" class="flex items-center space-x-2">
+                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                <span>{{ isEditing ? 'Updating...' : 'Creating...' }}</span>
+                            </div>
+                            <span v-else>{{ isEditing ? 'Update Payment' : 'Create Payment' }}</span>
+                        </Button>
                     </div>
                 </div>
             </div>
