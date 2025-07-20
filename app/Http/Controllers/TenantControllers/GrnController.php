@@ -7,6 +7,7 @@ use App\Http\Requests\Tenant\GrnValidator;
 use App\Models\TenantModels\GrnSummary;
 use App\Models\TenantModels\PurchaseOrder;
 use App\Models\TenantModels\PurchaseOrderDetail;
+use App\Models\TenantModels\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -61,6 +62,12 @@ class GrnController extends Controller
                     'description' => $detail['description'] ?? null,
                     'purchase_order_detail_id' => $detail['purchase_order_detail_id'] ?? null,
                 ]);
+
+                // Update product cost if it's empty or null
+                $product = Product::find($detail['product_id']);
+                if ($product && (empty($product->cost) || $product->cost == 0)) {
+                    $product->update(['cost' => $detail['cost']]);
+                }
 
                 if ($grnDetail->purchase_order_detail_id) {
                     $this->updatePoDetailReceivedQuantity($grnDetail->purchase_order_detail_id);
@@ -165,6 +172,12 @@ class GrnController extends Controller
                         'purchase_order_detail_id' => $detail['purchase_order_detail_id'] ?? null,
                     ]
                 );
+
+                // Update product cost if it's empty or null
+                $product = Product::find($detail['product_id']);
+                if ($product && (empty($product->cost) || $product->cost == 0)) {
+                    $product->update(['cost' => $detail['cost']]);
+                }
             }
             
             $finalPoIds = collect($validated['details'])
