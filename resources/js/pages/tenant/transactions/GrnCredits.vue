@@ -285,7 +285,7 @@ const editGrnCredit = async (grnCreditId) => {
         const response = await axios.get(`/api/grn-credits/${grnCreditId}`);
         const data = response.data;
         form.id = data.id;
-        form.grn_credit_date = data.grn_credit_date;
+        form.grn_credit_date = new Date(data.grn_credit_date).toISOString().split('T')[0];
         form.supplier_id = data.supplier_id;
         form.location_id = data.location_id;
         form.ap_account_id = data.ap_account_id;

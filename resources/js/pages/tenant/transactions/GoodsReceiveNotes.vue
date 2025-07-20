@@ -280,7 +280,7 @@ const editGrn = async (grnId) => {
         const response = await axios.get(`/api/grns/${grnId}`);
         const data = response.data;
         form.id = data.id;
-        form.grn_date = data.grn_date;
+        form.grn_date = new Date(data.grn_date).toISOString().split('T')[0];
         form.supplier_id = data.supplier_id;
         form.location_id = data.location_id;
         form.ap_account_id = data.ap_account_id;
