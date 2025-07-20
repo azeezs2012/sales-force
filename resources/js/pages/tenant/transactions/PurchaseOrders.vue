@@ -163,14 +163,14 @@
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead class="w-2/5">Product</TableHead>
-                                    <TableHead>Description</TableHead>
-                                    <TableHead>Location</TableHead>
-                                    <TableHead class="text-right">Qty</TableHead>
-                                    <TableHead class="text-right">Received</TableHead>
-                                    <TableHead class="text-right">Remaining</TableHead>
-                                    <TableHead class="text-right">Cost</TableHead>
-                                    <TableHead class="text-right">Total</TableHead>
+                                    <TableHead class="w-1/5">Product</TableHead>
+                                    <TableHead class="w-1/4">Description</TableHead>
+                                    <TableHead class="w-20">Location</TableHead>
+                                    <TableHead class="text-right w-24">Qty</TableHead>
+                                    <TableHead class="text-right w-20">Received</TableHead>
+                                    <TableHead class="text-right w-20">Remaining</TableHead>
+                                    <TableHead class="text-right w-28">Cost</TableHead>
+                                    <TableHead class="text-right w-24">Total</TableHead>
                                     <TableHead class="w-[50px]"></TableHead>
                                 </TableRow>
                             </TableHeader>

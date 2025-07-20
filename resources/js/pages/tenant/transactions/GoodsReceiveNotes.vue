@@ -498,14 +498,14 @@ const confirmDelete = async () => {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead class="w-2/5">Product</TableHead>
-                                    <TableHead>Location</TableHead>
-                                    <TableHead class="text-right">Qty</TableHead>
-                                    <TableHead class="text-right">Cost</TableHead>
-                                    <TableHead class="text-right">Total</TableHead>
-                                    <TableHead>PO Line ID</TableHead>
-                                    <TableHead class="text-right">PO Line Qty</TableHead>
-                                    <TableHead>Description</TableHead>
+                                    <TableHead class="w-1/5">Product</TableHead>
+                                    <TableHead class="w-1/4">Description</TableHead>
+                                    <TableHead class="w-20">Location</TableHead>
+                                    <TableHead class="text-right w-24">Qty</TableHead>
+                                    <TableHead class="text-right w-28">Cost</TableHead>
+                                    <TableHead class="text-right w-24">Total</TableHead>
+                                    <TableHead class="w-20">PO Line ID</TableHead>
+                                    <TableHead class="text-right w-24">PO Line Qty</TableHead>
                                     <TableHead class="w-[50px]"></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -520,6 +520,7 @@ const confirmDelete = async () => {
                                             </SelectContent>
                                         </Select>
                                     </TableCell>
+                                    <TableCell><Input v-model="item.description" placeholder="Description" /></TableCell>
                                     <TableCell>
                                         <Select v-model="item.location_id">
                                             <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
@@ -558,7 +559,6 @@ const confirmDelete = async () => {
                                     <TableCell class="text-right font-mono">{{ formatCurrency(item.quantity * item.cost) }}</TableCell>
                                     <TableCell>{{ item.purchase_order_detail_id || '-' }}</TableCell>
                                     <TableCell class="text-right">{{ item.ordered_quantity !== undefined ? item.ordered_quantity : '-' }}</TableCell>
-                                    <TableCell><Input v-model="item.description" placeholder="Description" /></TableCell>
                                     <TableCell><Button variant="destructive" size="sm" @click="removeDetailRow(index)"><Trash2 class="h-4 w-4" /></Button></TableCell>
                                 </TableRow>
                             </TableBody>
